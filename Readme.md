@@ -9,6 +9,7 @@ creates a public thread in response.
 ## TODO
 - [ ] Gracefully handle deleted threads
 - [ ] Clean up expired threads
+- [ ] Serialize state on exit, load on startup
 
 ## Setup
 - Create an OPENAI account
