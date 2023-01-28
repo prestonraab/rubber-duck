@@ -29,3 +29,9 @@ creates a public thread in response.
       - Add reactions
     - Copy the generated link, paste in the URL bar of your browser, 
       and use it to add the bot to your server
+  - Install `poetry`
+    - https://python-poetry.org/docs/#installation
+    - `curl -sSL https://install.python-poetry.org | python3 -`
+  - Clone this repo
+    - requires python 3.9
+    - run `poetry install` 
