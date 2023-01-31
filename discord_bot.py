@@ -43,11 +43,14 @@ class Conversation:
     text: str
 
     def to_json(self):
-        d = asdict(self)
-        del d['thread']
-        d['first_message'] = d['first_message'].isoformat()
-        d['last_message'] = d['last_message'].isoformat()
-        return d
+        return {
+            "thread_id": self.thread_id,
+            "thread_name": self.thread_name,
+            "started_by": self.started_by,
+            "first_message": self.first_message.isoformat(),
+            "last_message": self.last_message.isoformat(),
+            "text": self.text
+        }
 
     @staticmethod
     def from_json(jobj: dict, thread: discord.Thread) -> 'Conversation':
