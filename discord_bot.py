@@ -1,9 +1,14 @@
 # the os module helps us access environment variables
 # i.e., our API keys
+import json
 import os
 import logging
+import signal
+from dataclasses import dataclass, asdict
 from datetime import datetime
+from pathlib import Path
 
+import argparse
 from discord import ChannelType
 
 logging.basicConfig(level=logging.DEBUG)
@@ -24,51 +29,106 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'text-davinci-003'
-PREFIX = """
-RD is a friendly computer science TA for an introductory python course. 
-RD asks questions to help them learn how to solve the problem.
-RD avoids giving the student the answer directly.
-RD first makes sure the student understands the problem.
-Then RD asks questions to help the student decompose the problem into smaller subproblems,
-suggesting the student use functions to abstract away the details of the subproblems.
-RD essentially acts as a sounding board for the student.
-If the student is not able to solve the problem, RD suggests they talk to a human TA.
-S is a student looking for help.
-S: 
-"""
-
 CONVERSATION_TIMEOUT = 60 * 3  # three minutes
 
 
+@dataclass
+class Conversation:
+    thread: discord.Thread
+    guild_id: int
+    thread_id: int
+    thread_name: str
+    started_by: str
+    first_message: datetime
+    last_message: datetime
+    text: str
+
+    def to_json(self):
+        return {
+            "guild_id": self.guild_id,
+            "thread_id": self.thread_id,
+            "thread_name": self.thread_name,
+            "started_by": self.started_by,
+            "first_message": self.first_message.isoformat(),
+            "last_message": self.last_message.isoformat(),
+            "text": self.text
+        }
+
+    @staticmethod
+    def from_json(jobj: dict, thread: discord.Thread) -> 'Conversation':
+        jobj['first_message'] = datetime.fromisoformat(jobj['first_message'])
+        jobj['last_message'] = datetime.fromisoformat(jobj['last_message'])
+        jobj['thread'] = thread
+        return Conversation(**jobj)
+
+
 class MyClient(discord.Client):
-    def __init__(self, listenning_channel):
+    def __init__(self, prompt_dir: Path, conversation_dir: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
         super().__init__(intents=intents)
-        self.conversations = {}
-        self.timestamps = {}
-        self.listenning_channel = listenning_channel
 
-    def query(self, thread_id, timestamp: datetime, text):
+        self._load_prompts(prompt_dir)
+        self.conversation_dir = conversation_dir
+        self.conversations = {}
+        self.guild_dict = {}  # Loaded in on_ready
+
+    def _load_prompts(self, prompt_dir: Path):
+        self.prompts = {}
+        for file in prompt_dir.iterdir():
+            if file.suffix == '.txt':
+                self.prompts[file.stem] = file.read_text()
+
+    def __enter__(self):
+        # Register signal handlers
+        signal.signal(signal.SIGINT, self._handle_interrupt)
+        signal.signal(signal.SIGTERM, self._handle_interrupt)
+
+        return self
+
+    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
+        # serialize the conversations
+        logging.info('Serializing conversations')
+        for conversation in self.conversations.values():
+            self._serialize_conversation(conversation)
+        logging.info('Done serializing conversations')
+
+    def _handle_interrupt(self, signum=None, frame=None):
+        self.__exit__()
+        exit()
+
+    def _serialize_conversation(self, conversation: Conversation):
+        # Save conversation as JSON in self.conversations_dir
+        logging.debug(f'Serializing conversation {conversation.thread_id}')
+        filename = f'{conversation.guild_id}_{conversation.thread_id}.json'
+        with open(self.conversation_dir / filename, 'w') as file:
+            json.dump(conversation.to_json(), file)
+
+    def _load_conversation(self, filename: str):
+        # Load conversation from JSON in self.conversations_dir
+        logging.debug(f'Loading conversation {filename}')
+        with open(self.conversation_dir / filename) as file:
+            jobj = json.load(file)
+
+        guild = self.guild_dict.get(jobj['guild_id'])
+        if guild is None:
+            return
+        thread_id = jobj['thread_id']
+        thread = self.get_channel(thread_id)
+        self.conversations[thread_id] = Conversation.from_json(jobj, thread)
+
+    def query(self, conversation: Conversation, message_text: str):
         """
         Query the OPENAI API
         """
-        # if the user is not in the conversation dictionary
-        # or it has been a while since the last message
-        # start a new conversation
-        if thread_id not in self.conversations or \
-                (timestamp - self.timestamps[thread_id]).total_seconds() > CONVERSATION_TIMEOUT:
-            self.conversations[thread_id] = PREFIX
-            self.timestamps[thread_id] = timestamp
+        logging.debug(f"User said: {message_text}")
 
-        logging.debug(f"User said: {text}")
-
-        self.conversations[thread_id] += text + '\nRD: '
+        conversation.text += message_text + '\nRD: '
 
         completion = openai.Completion.create(
             model=AI_ENGINE,
-            prompt=self.conversations[thread_id],
+            prompt=conversation.text,
             temperature=0.9,
             max_tokens=100,
             top_p=1,
@@ -81,10 +141,20 @@ class MyClient(discord.Client):
         response = completion.choices[0].text.strip()
         logging.debug(f"Response: {response}")
 
-        self.conversations[thread_id] += response + '\nS: '
+        conversation.text += response + '\nS: '
+
         return response
 
     async def on_ready(self):
+        self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
+
+        # Load conversations from JSON in self.conversations_dir
+        logging.info('Loading conversations')
+        for file in self.conversation_dir.iterdir():
+            if file.suffix == '.json':
+                self._load_conversation(file.name)
+        logging.info('Done loading conversations')
+
         # print out information when the bot wakes up
         logging.info('Logged in as')
         logging.info(self.user.name)
@@ -94,9 +164,9 @@ class MyClient(discord.Client):
     async def on_message(self, message):
         """
         This function is called whenever the bot sees a message in a channel
-        If the message is a message in the self.listenning channel,
+        If the message is in a listen channel
           the bot creates a thread in response to that message
-        If the message is in a thread under the self.listenning channel,
+        If the message is in a conversation thread,
           the bot continues the conversation in that thread
         The bot ignores all other messages.
         """
@@ -104,22 +174,21 @@ class MyClient(discord.Client):
         if message.author == self.user:
             return
 
-        # if the message is in the self.listenning channel
-        # and the message is not a thread
-        if message.channel.name == self.listenning_channel:
-            # create a thread in response to the message
-            await self.create_conversation(message)
+        # if the message is in a listen channel, create a thread
+        if message.channel.name in self.prompts:
+            prefix = self.prompts[message.channel.name]
+            await self.create_conversation(prefix, message)
 
-        # if the message is in a thread under the self.listenning channel
+        # if the message is in an active thread, continue the conversation
         elif message.channel.id in self.conversations:
-            # continue the conversation
-            await self.continue_conversation(message.channel, datetime.utcnow(), message.content)
+            await self.continue_conversation(
+                self.conversations[message.channel.id], message.content)
 
         # otherwise, ignore the message
         else:
             return
 
-    async def create_conversation(self, message):
+    async def create_conversation(self, prefix, message):
         """
         Create a thread in response to this message.
         """
@@ -133,38 +202,51 @@ class MyClient(discord.Client):
             auto_archive_duration=60
         )
 
-        # add the thread to the conversations dictionary
-        self.conversations[thread.id] = PREFIX
-        self.timestamps[thread.id] = datetime.utcnow()
+        conversation = Conversation(
+            guild_id=thread.guild.id,
+            thread=thread,
+            thread_id=thread.id,
+            thread_name=thread.name,
+            started_by=message.author.name,
+            first_message=datetime.utcnow(),
+            last_message=datetime.utcnow(),
+            text=prefix
+        )
+        self.conversations[thread.id] = conversation
 
         # continue the conversation
-        await self.continue_conversation(
-            thread, self.timestamps[thread.id], self.conversations[thread.id], user=message.author)
+        await self.continue_conversation(conversation, "", mention=message.author)
 
     async def continue_conversation(
-            self, thread, timestamp: datetime, content: str, user=None):
+            self, conversation: Conversation, message_text: str, mention: discord.User = None):
         """
         Use the OPNENAI API to continue the conversation
         """
+        thread = conversation.thread
+
         # while the bot is waiting on a response from the model
         # set its status as typing for user-friendliness
         async with thread.typing():
-            response = self.query(thread.id, timestamp, content)
+            response = self.query(conversation, message_text)
 
         if not response:
             response = 'RubberDuck encountered an error.'
 
         # mention the user at the beginning of the response
-        if user is not None:
-            response = f"{user.mention} {response}"
+        if mention is not None:
+            response = f"{mention.mention} {response}"
         # send the model's response to the Discord channel
         await thread.send(response)
 
 
-def main():
-    client = MyClient('duck-pond')
-    client.run(os.environ['DISCORD_TOKEN'])
+def main(prompts: Path, conversations: Path):
+    with MyClient(prompts, conversations) as client:
+        client.run(os.environ['DISCORD_TOKEN'])
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prompts', type=Path, default='prompts')
+    parser.add_argument('--conversations', type=Path, default='conversations')
+    args = parser.parse_args()
+    main(args.prompts, args.conversations)
