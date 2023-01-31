@@ -89,7 +89,7 @@ class MyClient(discord.Client):
 
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
         # serialize the conversations
         logging.info('Serializing conversations')
         for conversation in self.conversations.values():
