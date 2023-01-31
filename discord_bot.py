@@ -8,6 +8,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
 
+import argparse
 from discord import ChannelType
 
 logging.basicConfig(level=logging.DEBUG)
@@ -166,7 +167,7 @@ class MyClient(discord.Client):
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
-            prefix = PREFIX
+            prefix = self.prompts[message.channel.name]
             await self.create_conversation(prefix, message)
 
         # if the message is in an active thread, continue the conversation
@@ -234,4 +235,8 @@ def main(prompts: Path, conversations: Path):
 
 
 if __name__ == '__main__':
-    main(Path('prompts'), Path('conversations'))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prompts', type=Path, default='prompts')
+    parser.add_argument('--conversations', type=Path, default='conversations')
+    args = parser.parse_args()
+    main(args.prompts, args.conversations)
