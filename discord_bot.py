@@ -35,6 +35,7 @@ CONVERSATION_TIMEOUT = 60 * 3  # three minutes
 @dataclass
 class Conversation:
     thread: discord.Thread
+    guild_id: int
     thread_id: int
     thread_name: str
     started_by: str
@@ -44,6 +45,7 @@ class Conversation:
 
     def to_json(self):
         return {
+            "guild_id": self.guild_id,
             "thread_id": self.thread_id,
             "thread_name": self.thread_name,
             "started_by": self.started_by,
@@ -70,6 +72,7 @@ class MyClient(discord.Client):
         self._load_prompts(prompt_dir)
         self.conversation_dir = conversation_dir
         self.conversations = {}
+        self.guild_dict = {}  # Loaded in on_ready
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
@@ -78,14 +81,6 @@ class MyClient(discord.Client):
                 self.prompts[file.stem] = file.read_text()
 
     def __enter__(self):
-        # Load conversations from JSON in self.conversations_dir
-        logging.info('Loading conversations')
-        for file in self.conversation_dir.iterdir():
-            if file.suffix == '.json':
-                conversation = self._load_conversation(file.name)
-                self.conversations[conversation.thread_id] = conversation
-        logging.info('Done loading conversations')
-
         # Register signal handlers
         signal.signal(signal.SIGINT, self._handle_interrupt)
         signal.signal(signal.SIGTERM, self._handle_interrupt)
@@ -106,20 +101,22 @@ class MyClient(discord.Client):
     def _serialize_conversation(self, conversation: Conversation):
         # Save conversation as JSON in self.conversations_dir
         logging.debug(f'Serializing conversation {conversation.thread_id}')
-        filename = f'{conversation.thread_id}.json'
+        filename = f'{conversation.guild_id}_{conversation.thread_id}.json'
         with open(self.conversation_dir / filename, 'w') as file:
             json.dump(conversation.to_json(), file)
 
-    def _load_conversation(self, filename: str) -> Conversation:
+    def _load_conversation(self, filename: str):
         # Load conversation from JSON in self.conversations_dir
         logging.debug(f'Loading conversation {filename}')
         with open(self.conversation_dir / filename) as file:
             jobj = json.load(file)
 
+        guild = self.guild_dict.get(jobj['guild_id'])
+        if guild is None:
+            return
         thread_id = jobj['thread_id']
         thread = self.get_channel(thread_id)
-
-        return Conversation.from_json(jobj, thread)
+        self.conversations[thread_id] = Conversation.from_json(jobj, thread)
 
     def query(self, conversation: Conversation, message_text: str):
         """
@@ -149,6 +146,15 @@ class MyClient(discord.Client):
         return response
 
     async def on_ready(self):
+        self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
+
+        # Load conversations from JSON in self.conversations_dir
+        logging.info('Loading conversations')
+        for file in self.conversation_dir.iterdir():
+            if file.suffix == '.json':
+                self._load_conversation(file.name)
+        logging.info('Done loading conversations')
+
         # print out information when the bot wakes up
         logging.info('Logged in as')
         logging.info(self.user.name)
@@ -197,6 +203,7 @@ class MyClient(discord.Client):
         )
 
         conversation = Conversation(
+            guild_id=thread.guild.id,
             thread=thread,
             thread_id=thread.id,
             thread_name=thread.name,
