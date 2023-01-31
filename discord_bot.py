@@ -99,7 +99,7 @@ class MyClient(discord.Client):
             self._serialize_conversation(conversation)
         logging.info('Done serializing conversations')
 
-    def _handle_interrupt(self):
+    def _handle_interrupt(self, signum=None, frame=None):
         self.__exit__()
         exit()
 
