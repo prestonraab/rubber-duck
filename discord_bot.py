@@ -113,9 +113,13 @@ class MyClient(discord.Client):
 
         guild = self.guild_dict.get(jobj['guild_id'])
         if guild is None:
+            logging.warning(f"Unable to find guild {jobj['guild_id']}")
             return
         thread_id = jobj['thread_id']
         thread = self.get_channel(thread_id)
+        if thread is None:
+            logging.warning(f"Unable to find thread {thread_id}")
+            return
         self.conversations[thread_id] = Conversation.from_json(jobj, thread)
 
     def query(self, conversation: Conversation, message_text: str):
