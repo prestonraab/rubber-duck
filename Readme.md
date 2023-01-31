@@ -6,6 +6,9 @@ The bot listens to the configured channel, currently set in the source code as `
 When a user posts a message to the duck pond, the duck bot 
 creates a public thread in response. 
 
+To add a new listening channel, add a file named by the channel in the prompts folder.
+The file should contain the prompt to use for each thread in that channel.
+
 ## TODO
 - [ ] Gracefully handle deleted threads
 - [ ] Clean up expired threads
