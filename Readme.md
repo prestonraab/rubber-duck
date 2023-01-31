@@ -35,4 +35,13 @@ creates a public thread in response.
     - `curl -sSL https://install.python-poetry.org | python3 -`
   - Clone this repo
     - requires python 3.9
-    - run `poetry install` 
+    - run `poetry install`
+
+To run on server:
+- cd to project folder
+- `poetry shell`
+- `nohup python discord_bot.py >> /tmp/duck.log &`
+
+To kill on server:
+- `ps -e | python`
+- `kill <pid>`
