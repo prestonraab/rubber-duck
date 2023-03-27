@@ -1,7 +1,7 @@
 # Rubber Duck Discord Bot
 
 ## Usage
-The bot listens to the configured channel, currently set in the source code as `"duck-pond"`
+The bot listens to the configured channel, currently set in the source code as `"duck-pond"`.
 
 When a user posts a message to the duck pond, the duck bot 
 creates a public thread in response. 
