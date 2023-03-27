@@ -6,7 +6,7 @@ authors = ["Gordon Bean <gbean@cs.byu.edu>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-openai = "^0.25.0"
+openai = "^0.27.2"
 discord = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
