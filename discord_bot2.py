@@ -126,7 +126,7 @@ class MyClient(discord.Client):
         except Exception as ex:
             logging.exception(f"Unable to load conversation: {filename}")
 
-    def query(self, conversation: Conversation, message_text: str):
+    async def query(self, conversation: Conversation, message_text: str):
         """
         Query the OPENAI API
         """
@@ -134,7 +134,7 @@ class MyClient(discord.Client):
 
         conversation.messages.append(dict(role='user', content=message_text))
 
-        completion = openai.ChatCompletion.create(
+        completion = await openai.ChatCompletion.acreate(
             model=AI_ENGINE,
             messages=conversation.messages
         )
@@ -204,6 +204,7 @@ class MyClient(discord.Client):
             type=ChannelType.public_thread,
             auto_archive_duration=60
         )
+        welcome = f'{message.author.mention} What can I do for you?'
 
         conversation = Conversation(
             guild_id=thread.guild.id,
@@ -214,16 +215,39 @@ class MyClient(discord.Client):
             first_message=datetime.utcnow(),
             last_message=datetime.utcnow(),
             messages=[
-                dict(role='system', content=prefix or message.content)
+                dict(role='system', content=prefix or message.content),
+                dict(role='assistant', content=welcome)
             ]
         )
         self.conversations[thread.id] = conversation
+        async with thread.typing():
+            await thread.send(welcome)
 
-        # continue the conversation
-        await self.continue_conversation(conversation, "", mention=message.author)
+    def parse_blocks(self, text: str, limit=2000):
+        block = ""
+        in_code = False
+        for line in text.splitlines():
+            # New block starts with new code fence or when we run out of room
+            if (line.strip().startswith('```') and not in_code) or len(block) + len(line) > limit:
+                if block:
+                    yield block
+                    block = ""
+                else:
+                    block += ('\n' + line) if block else line
+
+            if line.strip().startswith('```') and not in_code:
+                # Code fence starting
+                in_code = True
+            else:
+                # Code fence ending
+                in_code = False
+
+    async def send(self, thread: discord.Thread, text: str):
+        for block in self.parse_blocks(text):
+            await thread.send(block)
 
     async def continue_conversation(
-            self, conversation: Conversation, message_text: str, mention: discord.User = None):
+            self, conversation: Conversation, message_text: str):
         """
         Use the OPNENAI API to continue the conversation
         """
@@ -232,16 +256,13 @@ class MyClient(discord.Client):
         # while the bot is waiting on a response from the model
         # set its status as typing for user-friendliness
         async with thread.typing():
-            response = self.query(conversation, message_text)
+            response = await self.query(conversation, message_text)
 
-        if not response:
-            response = 'RubberDuck encountered an error.'
+            if not response:
+                response = 'RubberDuck encountered an error.'
 
-        # mention the user at the beginning of the response
-        if mention is not None:
-            response = f"{mention.mention} {response}"
-        # send the model's response to the Discord channel
-        await thread.send(response)
+            # send the model's response to the Discord channel
+            await thread.send(response)
 
 
 def main(prompts: Path, conversations: Path):
