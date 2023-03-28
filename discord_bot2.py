@@ -200,7 +200,7 @@ class MyClient(discord.Client):
 
         # create a public thread in response to the message
         thread = await channel.create_thread(
-            name=message.content,
+            name=message.content[:20],
             type=ChannelType.public_thread,
             auto_archive_duration=60
         )
