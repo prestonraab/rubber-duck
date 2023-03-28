@@ -177,6 +177,9 @@ class MyClient(discord.Client):
         if message.author == self.user:
             return
 
+        if message.content.startswith('//'):
+            return
+
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
             prefix = self.prompts[message.channel.name]
@@ -224,23 +227,20 @@ class MyClient(discord.Client):
             await thread.send(welcome)
 
     def parse_blocks(self, text: str, limit=2000):
+        tick = '`'
         block = ""
         in_code = False
         for line in text.splitlines():
             # New block starts with new code fence or when we run out of room
-            if (line.strip().startswith('```') and not in_code) or len(block) + len(line) > limit:
+            if (line.strip().startswith(tick*3) and not in_code) or len(block) + len(line) > limit:
                 if block:
                     yield block
                     block = ""
-                else:
-                    block += ('\n' + line) if block else line
 
-            if line.strip().startswith('```') and not in_code:
-                # Code fence starting
-                in_code = True
-            else:
-                # Code fence ending
-                in_code = False
+            block += ('\n' + line) if block else line
+
+            if line.strip().startswith(tick*3):
+                in_code = not in_code
         if block:
             yield block
 
@@ -264,7 +264,7 @@ class MyClient(discord.Client):
                 response = 'RubberDuck encountered an error.'
 
             # send the model's response to the Discord channel
-            await send(response)
+            await self.send(thread, response)
 
 
 def main(prompts: Path, conversations: Path):
