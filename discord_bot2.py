@@ -113,15 +113,18 @@ class MyClient(discord.Client):
     def _load_conversation(self, filename: str):
         # Load conversation from JSON in self.conversations_dir
         logging.debug(f'Loading conversation {filename}')
-        with open(self.conversation_dir / filename) as file:
-            jobj = json.load(file)
+        try:
+            with open(self.conversation_dir / filename) as file:
+                jobj = json.load(file)
 
-        guild = self.guild_dict.get(jobj['guild_id'])
-        if guild is None:
-            return
-        thread_id = jobj['thread_id']
-        thread = self.get_channel(thread_id)
-        self.conversations[thread_id] = Conversation.from_json(jobj, thread)
+            guild = self.guild_dict.get(jobj['guild_id'])
+            if guild is None:
+                return
+            thread_id = jobj['thread_id']
+            thread = self.get_channel(thread_id)
+            self.conversations[thread_id] = Conversation.from_json(jobj, thread)
+        except Exception as ex:
+            logging.exception(f"Unable to load conversation: {filename}")
 
     def query(self, conversation: Conversation, message_text: str):
         """
@@ -211,7 +214,7 @@ class MyClient(discord.Client):
             first_message=datetime.utcnow(),
             last_message=datetime.utcnow(),
             messages=[
-                dict(role='system', content=prefix)
+                dict(role='system', content=prefix or message.content)
             ]
         )
         self.conversations[thread.id] = conversation

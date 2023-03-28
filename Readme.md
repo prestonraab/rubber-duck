@@ -42,8 +42,9 @@ The file should contain the prompt to use for each thread in that channel.
 
 To run on server:
 - cd to project folder
-- `poetry shell`
-- `nohup python discord_bot.py >> /tmp/duck.log &`
+- `git pull`
+- `poetry install`
+- `nohup poetry run python discord_bot.py >> /tmp/duck.log &`
 
 To kill on server:
 - `ps -e | python`
