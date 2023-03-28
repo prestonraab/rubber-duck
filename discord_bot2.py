@@ -241,6 +241,8 @@ class MyClient(discord.Client):
             else:
                 # Code fence ending
                 in_code = False
+        if block:
+            yield block
 
     async def send(self, thread: discord.Thread, text: str):
         for block in self.parse_blocks(text):
@@ -262,7 +264,7 @@ class MyClient(discord.Client):
                 response = 'RubberDuck encountered an error.'
 
             # send the model's response to the Discord channel
-            await thread.send(response)
+            await send(response)
 
 
 def main(prompts: Path, conversations: Path):
