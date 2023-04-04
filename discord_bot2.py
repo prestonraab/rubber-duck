@@ -229,18 +229,21 @@ class MyClient(discord.Client):
     def parse_blocks(self, text: str, limit=2000):
         tick = '`'
         block = ""
-        in_code = False
+        current_fence = ""
         for line in text.splitlines():
-            # New block starts with new code fence or when we run out of room
-            if (line.strip().startswith(tick*3) and not in_code) or len(block) + len(line) > limit:
+            if len(block) + len(line) > limit:
                 if block:
                     yield block
-                    block = ""
+                    block = current_fence
 
             block += ('\n' + line) if block else line
 
-            if line.strip().startswith(tick*3):
-                in_code = not in_code
+            if line.strip().startswith(tick * 3):
+                if current_fence:
+                    current_fence = ""
+                else:
+                    current_fence = line
+
         if block:
             yield block
 
