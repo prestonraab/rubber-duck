@@ -231,8 +231,10 @@ class MyClient(discord.Client):
         block = ""
         current_fence = ""
         for line in text.splitlines():
-            if len(block) + len(line) > limit:
+            if len(block) + len(line) > limit - 3:
                 if block:
+                    if current_fence:
+                        block += '```'
                     yield block
                     block = current_fence
 
