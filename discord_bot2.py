@@ -2,6 +2,8 @@ import json
 import os
 import logging
 import signal
+import asyncio.subprocess
+import subprocess
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
@@ -68,7 +70,7 @@ class Conversation:
 
 
 class MyClient(discord.Client):
-    def __init__(self, prompt_dir: Path, conversation_dir: Path):
+    def __init__(self, prompt_dir: Path, conversation_dir: Path, restarted: bool = False):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
@@ -78,6 +80,7 @@ class MyClient(discord.Client):
         self.conversation_dir = conversation_dir
         self.conversations = {}
         self.guild_dict = {}  # Loaded in on_ready
+        self.restarted = restarted
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
@@ -163,6 +166,12 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
+        if self.restarted:
+            channels = self.get_all_channels()
+            for channel in channels:
+                if channel.name == 'restart-duck':
+                    await channel.send('Done.')
+            self.restarted = False
 
     async def on_message(self, message):
         """
@@ -178,6 +187,15 @@ class MyClient(discord.Client):
             return
 
         if message.content.startswith('//'):
+            return
+
+        if message.channel.name == 'restart-duck':
+            await message.channel.send('Restarting.')
+            channel = message.channel
+
+            #await message.channel.send('Wait.')
+            #await asyncio.subprocess.create_subprocess_exec('./hard_restart.sh')
+            subprocess.run('./hard_restart.sh')
             return
 
         # if the message is in a listen channel, create a thread
@@ -272,8 +290,8 @@ class MyClient(discord.Client):
             await self.send(thread, response)
 
 
-def main(prompts: Path, conversations: Path):
-    with MyClient(prompts, conversations) as client:
+def main(prompts: Path, conversations: Path, restarted: bool):
+    with MyClient(prompts, conversations, restarted) as client:
         client.run(os.environ['DISCORD_TOKEN'])
 
 
@@ -281,5 +299,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prompts', type=Path, default='prompts')
     parser.add_argument('--conversations', type=Path, default='conversations')
+    parser.add_argument('--restarted', action='store_true')
     args = parser.parse_args()
-    main(args.prompts, args.conversations)
+    main(args.prompts, args.conversations, args.restarted)
