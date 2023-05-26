@@ -167,6 +167,8 @@ if __name__ == "__main__":
     go(Bit.new_bit)
 #
 
+The optimal approach is to paint and then move instead of move and then paint.
+
 3) Red line
 
 Start world file:
