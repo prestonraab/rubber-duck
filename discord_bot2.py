@@ -214,6 +214,8 @@ class MyClient(discord.Client):
         :param channel: The channel to say something in
         :param output: The message to say, long messages will be split into multiple messages
         """
+        # Async methods like for loops better than while loops
+        # Split output into 1800 character chunks
         for i in range(len(output) // 1800):
             await channel.send(f'Output: ```{output[:1800]}```')
             output = output[1800:]
@@ -245,7 +247,43 @@ class MyClient(discord.Client):
         await self.execute_command(message.content[1:], message.channel)
         return
 
-    async def on_message(self, message):
+    async def display_help(self, message):
+        await message.channel.send(
+            "!restart [branch] - restart the bot, optionally on a different branch\n"
+            "!log - print the log file\n"
+            "!rmlog - remove the log file\n"
+            "!status - print a status message\n"
+            "!help - print this message\n"
+            "! - execute a command in the shell\n"
+        )
+
+    async def control_on_message(self, message):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        :param message:
+        :return:
+        """
+        content = message.content
+        if content.startswith('!restart'):
+            await self.restart(message)
+
+        elif content.startswith('!log'):
+            await self.execute_command("cat /tmp/duck.log", message.channel)
+
+        elif content.startswith('!rmlog'):
+            await self.execute_command("rm /tmp/duck.log", message.channel)
+            await self.execute_command("touch /tmp/duck.log", message.channel)
+
+        elif content.startswith('!status'):
+            await message.channel.send('I am alive.')
+
+        elif content.startswith('!help'):
+            await self.display_help(message)
+
+        elif content.startswith('!'):
+            await self.execute_message(message)
+
+    async def on_message(self, message: discord.Message):
         """
         This function is called whenever the bot sees a message in a channel
         If the message is in a listen channel
@@ -262,31 +300,15 @@ class MyClient(discord.Client):
             return
 
         if message.channel.name == 'control-duck':
-            if message.content.startswith('!restart'):
-                await self.restart(message)
-            elif message.content.startswith('!log'):
-                await self.execute_command("cat /tmp/duck.log", message.channel)
-            elif message.content.startswith('!rmlog'):
-                await self.execute_command("rm /tmp/duck.log", message.channel)
-                await self.execute_command("touch /tmp/duck.log", message.channel)
-            elif message.content.startswith('!status'):
-                await message.channel.send('I am alive.')
-            elif message.content.startswith('!help'):
-                await message.channel.send(
-                    " !restart [branch] - restart the bot, optionally on a different branch\n"
-                    " !log - print the log file\n"
-                    " !rmlog - remove the log file\n"
-                    " !status - print a status message\n"
-                    " !help - print this message\n"
-                    " ! - execute a command in the shell\n"
-                    )
-            elif message.content.startswith('!'):
-                await self.execute_message(message)
+            await self.control_on_message(message)
             return
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
-            prefix = self.prompts[message.channel.name]
+            prefix = self.prompts["duck-pond"]
+            if message.channel.category.name in self.prompts:
+                prefix += self.prompts[message.channel.category.name]
+            prefix += self.prompts[message.channel.name]
             await self.create_conversation(prefix, message)
 
         # if the message is in an active thread, continue the conversation
@@ -297,6 +319,7 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
+
 
     async def create_conversation(self, prefix, message):
         """
