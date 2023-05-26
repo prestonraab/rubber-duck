@@ -191,6 +191,9 @@ class MyClient(discord.Client):
 
         await message.channel.send(f'Arguments processed: {split_args}')
         os.chdir(Path(__file__).parent)
+        if os.system(f"git fetch") != 0:
+            await message.channel.send(f'Error fetching from git.')
+            return
         if os.system(f"git checkout {message_args.branch}") != 0:
             await message.channel.send(f'Error checking out {message_args.branch} branch.')
             return
@@ -247,6 +250,9 @@ class MyClient(discord.Client):
 
         await message.channel.send(f'Arguments processed: {split_args}')
         os.chdir(Path(__file__).parent)
+        if os.system(f"git fetch") != 0:
+            await message.channel.send(f'Error fetching from git.')
+            return
         if os.system(f"git checkout {message_args.branch}") != 0:
             await message.channel.send(f'Error checking out {message_args.branch} branch.')
             return
