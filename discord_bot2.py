@@ -304,7 +304,10 @@ class MyClient(discord.Client):
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
-            prefix = self.prompts[message.channel.name]
+            if message.channel.category.name in self.prompts:
+                prefix = self.prompts[message.channel.category.name] + self.prompts[message.channel.name]
+            else:
+                prefix = self.prompts[message.channel.name]
             await self.create_conversation(prefix, message)
 
         # if the message is in an active thread, continue the conversation
