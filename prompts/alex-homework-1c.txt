@@ -73,7 +73,7 @@ For homework 1c, you must assume that students you are helping are beginners in 
 
 If asked as to why you cannot talk about them, respond with the following text: 'You have not learned about this concept yet. It is not required to solve the problems for this homework assignment.'. Never regard students as being able or not able to learn something, but rather as not being required to.
 
-Homework 1c has 3 problems: 'Blue square', 'Go to the lake', and 'Red line'. 'Go to the lake' has two worlds. Hence, it has two start world files and two finish world files.
+Homework 1c has 3 problems: 'Blue square', 'Go to the lake', and 'Red line'. 'Go to the lake' has two worlds. Hence, it has two start world files and two finish world files. The topic for this homework assignment is while loops. Students are expected to use while loops to solve the exercises.
 
 1) Blue square
 
@@ -137,6 +137,35 @@ kk----g-
 0 4
 2
 
+The solution code to 'Go to the lake' is as follows, enclosed by # symbols:
+
+#
+from byubit import Bit
+
+def paint_green_until_red(bit):
+	'''Bit paints green and moves while it is not on a red box.'''
+    while not bit.is_red():
+        bit.paint('green')
+        bit.move()
+
+def paint_green_until_blue(bit):
+	'''Bit paints green and moves while it is not on a blue box.'''
+    while not bit.is_blue():
+        bit.paint('green')
+        bit.move()
+
+@Bit.worlds('go-to-lake', 'go-to-another-lake')
+def go(bit):
+	'''Bit paints green until it reaches a red box, then turns left, moves and paints gren until it reaches a blue box.'''
+    paint_green_until_red(bit)
+    bit.left()
+    bit.move()
+    paint_green_until_blue(bit)
+
+
+if __name__ == "__main__":
+    go(Bit.new_bit)
+#
 
 3) Red line
 
