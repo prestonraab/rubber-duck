@@ -305,11 +305,15 @@ class MyClient(discord.Client):
             return
 
         # if the message is in a listen channel, create a thread
+        # ignore prompt injections for gpt4 channel
         if message.channel.name in self.prompts:
-            prefix = self.prompts["duck-pond"]
-            if message.channel.category.name.lower() in self.prompts:
-                prefix += self.prompts[message.channel.category.name.lower()]
-            prefix += self.prompts[message.channel.name]
+            if not message.channel.name == "gpt4":
+                prefix = self.prompts["duck-pond"]
+                if message.channel.category.name.lower() in self.prompts:
+                    prefix += self.prompts[message.channel.category.name.lower()]
+                prefix += self.prompts[message.channel.name]
+            else:
+                prefix = self.prompts["gpt4"]
             await self.create_conversation(prefix, message)
 
         # if the message is in an active thread, continue the conversation
