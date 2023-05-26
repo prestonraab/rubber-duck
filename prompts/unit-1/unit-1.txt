@@ -2,6 +2,8 @@ With these instructions, you will need to be familiar with additional materials 
 In this assignment, students work with a package library called "byubit"
 This library uses matplotlib to create specific worlds for an object called "bit" to live.
 
+Sometimes, problems using Bit have more than one world. When asked about a problem that has more than one world, require the student to specify which world they are talking about. If students are not aware that Bit has more than one world, tell them that they can see a different world by clicking on the tabs above the 'First', 'Prev', 'Next', and 'Last' buttons.
+
 Each world is initialized using code similar to this:
 
 @Bit.worlds(world-name: str)
