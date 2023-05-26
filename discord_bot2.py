@@ -214,7 +214,7 @@ class MyClient(discord.Client):
             elif message.content.startswith('!'):
                 message_args = shlex.split(message.content[1:])
                 # Run command using shell and pipe output to channel
-                await message.channel.send(f'Arguments processed: {message_args}')
+                await message.channel.send(f'Command processed: {message_args}')
                 process = subprocess.Popen(message_args, shell=True, stdout=subprocess.PIPE)
                 while True:
                     output = process.stdout.readline().decode()
@@ -222,6 +222,8 @@ class MyClient(discord.Client):
                         break
                     if output:
                         await message.channel.send(output.strip())
+                await message.channel.send(f'Done.')
+                return
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
