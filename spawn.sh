@@ -1,1 +1,0 @@
-nohup poetry run python discord_bot2.py >> /tmp/duck.log &

@@ -209,62 +209,42 @@ class MyClient(discord.Client):
         return
 
 
-    async def execute_command(self, message):
+    async def say_in_channel(self, channel, output):
+        """
+        Say something in a channel
+        :param channel: The channel to say something in
+        :param output: The message to say, long messages will be split into multiple messages
+        """
+        for i in range(len(output) // 1800):
+            await channel.send(f'Output: ```{output[:1800]}```')
+            output = output[1800:]
+
+        await channel.send(f'Output: ```{output}```')
+
+    async def execute_command(self, text, channel):
+        """
+        Execute a command in the shell and return the output to the channel
+        """
+        split_args = shlex.split(text)
+        # Run command using shell and pipe output to channel
+        await channel.send(f'Command processed: {split_args}')
+        process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Get output of command and send to channel
+        errors = process.stderr.decode('utf-8')
+        if errors:
+            await channel.send(f'Errors: ```{errors}```')
+        output = str(process.stdout.decode('utf-8'))
+        await self.say_in_channel(channel, output)
+        await channel.send(f'Done.')
+        return
+
+
+    async def execute_message(self, message):
         """
         Execute a command in the shell and return the output to the channel
         :param message: discord.Message object, used to get the command
         """
-        split_args = shlex.split(message.content[1:])
-        # Run command using shell and pipe output to channel
-        await message.channel.send(f'Command processed: {split_args}')
-        process = subprocess.run(message.content[1:], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # Get output of command and send to channel
-        errors = process.stderr.decode('utf-8')
-        if errors:
-            await message.channel.send(f'Errors: ```{errors}```')
-        output = str(process.stdout.decode('utf-8'))
-        # if len(output) > 1000:
-        #     output = output[:1000]
-        for i in range(len(output) // 1800):
-            await message.channel.send(f'Output: ```{output[:1800]}```')
-            output = output[1800:]
-
-        await message.channel.send(f'Output: ```{output}```')
-        await message.channel.send(f'Done.')
-        return
-
-    async def spawn(self, message):
-        """
-        Spawn a new bot instance
-        :param message: The message that triggered the spawn, used to get the branch name
-        """
-        await message.channel.send(f'Spawn requested.')
-        message_parser = argparse.ArgumentParser()
-        message_parser.add_argument('--branch', default='master')
-        split_args = shlex.split(message.content)[1:]
-        try:
-            message_args = message_parser.parse_args(split_args)
-        except Exception as e:
-            await message.channel.send(f'Error parsing arguments: {e}')
-            return
-
-        await message.channel.send(f'Arguments processed: {split_args}')
-        os.chdir(Path(__file__).parent)
-        if os.system(f"git fetch") != 0:
-            await message.channel.send(f'Error fetching from git.')
-            return
-        if os.system(f"git checkout {message_args.branch}") != 0:
-            await message.channel.send(f'Error checking out {message_args.branch} branch.')
-            return
-        if os.system("git clean -f") != 0:
-            await message.channel.send('Error cleaning git.')
-            return
-        if os.system("git pull") != 0:
-            await message.channel.send('Error pulling from git.')
-            return
-        os.system("poetry install")
-        await message.channel.send('Spawning.')
-        subprocess.Popen(["bash", "spawn.sh"])
+        await self.execute_command(message.content[1:], message.channel)
         return
 
 
@@ -287,10 +267,15 @@ class MyClient(discord.Client):
         if message.channel.name == 'control-duck':
             if message.content.startswith('!restart'):
                 await self.restart(message)
-            elif message.content.startswith('!spawn'):
-                await self.spawn(message)
+            elif message.content.startswith('!log'):
+                await self.execute_command("cat /tmp/duck.log", message.channel)
+            elif message.content.startswith('!rmlog'):
+                await self.execute_command("rm /tmp/duck.log", message.channel)
+            elif message.content.startswith('!status'):
+                await message.channel.send('I am alive.')
             elif message.content.startswith('!'):
-                await self.execute_command(message)
+                await self.execute_message(message)
+            return
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
