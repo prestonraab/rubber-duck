@@ -208,7 +208,6 @@ class MyClient(discord.Client):
         subprocess.Popen(["bash", "restart.sh"])
         return
 
-
     async def say_in_channel(self, channel, output):
         """
         Say something in a channel
@@ -238,7 +237,6 @@ class MyClient(discord.Client):
         await channel.send(f'Done.')
         return
 
-
     async def execute_message(self, message):
         """
         Execute a command in the shell and return the output to the channel
@@ -246,7 +244,6 @@ class MyClient(discord.Client):
         """
         await self.execute_command(message.content[1:], message.channel)
         return
-
 
     async def on_message(self, message):
         """
@@ -275,14 +272,15 @@ class MyClient(discord.Client):
             elif message.content.startswith('!status'):
                 await message.channel.send('I am alive.')
             elif message.content.startswith('!help'):
-                await message.channel.send('''
-                !restart [branch] - restart the bot, optionally on a different branch
-                !log - print the log file
-                !rmlog - remove the log file
-                !status - print a status message
-                !help - print this message
-                ! - execute a command in the shell
-                ''')
+                await message.channel.send(
+                    '''
+                    !restart [branch] - restart the bot, optionally on a different branch
+                    !log - print the log file
+                    !rmlog - remove the log file
+                    !status - print a status message
+                    !help - print this message
+                    ! - execute a command in the shell
+                    ''')
             elif message.content.startswith('!'):
                 await self.execute_message(message)
             return
