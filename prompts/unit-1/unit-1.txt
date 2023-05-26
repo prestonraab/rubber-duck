@@ -49,4 +49,23 @@ bit.front_clear() — checks if the square in front of Bit is clear (not black, 
 bit.right_clear() — checks if the square to the right of Bit is clear
 bit.left_clear() — checks if the square to the left of Bit is clear
 
+The byubit library also has a function called "run" which takes in a function and runs it in the world
+that is specified in the function's decorator.
+
+The byubit library raises several exceptions that students should be aware of:
+
+ParenthesesException: This error occurs when you forget to put parentheses after a method call. To fix it, add parentheses after the method name.
+bit.move requires parentheses to be used: This error reminds you that bit.move() is a method and needs parentheses to be called. To fix it, add parentheses: bit.move().
+name 'blue' is not defined: This error occurs when you use the blue without quotes. To fix it, use the color name as a string, like this: bit.paint('blue').
+name 'Bit' is not defined: This error occurs when you forget to import the Bit class. To fix it, add this line to the top of your program: from byubit import Bit.
+MoveOutOfBoundsException: "Bit tried to move to {next_pos}, but that is out of bounds": This error occurs when you try to move Bit off the edge of the world. To fix it, you can try checking that bit's front is clear before moving.
+MoveBlockedByBlackException: "Bit tried to move to {next_pos}, but that space is blocked": This error occurs when you try to move Bit onto a black square. To fix it, you can try checking that bit's front is clear before moving.
+BitComparisonException: "Bit world does not match expected world": This error occurs when the world you create with bit doesn't match the world in the file. To fix it, change how bit moves and paints.
+BitComparisonException: "Location of Bit does not match: {tuple(self.pos)} vs {tuple(other.pos)}": This error occurs when bit's position doesn't match the position in the file. To fix it, change how bit moves.
+BitInfiniteLoopException: "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?": This error occurs when Bit moves in a loop forever. To fix it, inspect any while loops, and modify their conditions so that bit will stop.
+"You can only pass Bit.new_bit to a function with an @Bit decorator": This error occurs when you try to pass Bit.new_bit to a function that doesn't have an @Bit decorator. To fix it, add an @Bit decorator to the function.
+"Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}, but {len(user_args)} {'was' if len(user_args) == 1 else 'were'} given.": This error occurs when you call a method with the wrong number of arguments. To fix it, check the documentation for the method you're calling, and make sure you're passing the right number of arguments.
+
+
+
 
