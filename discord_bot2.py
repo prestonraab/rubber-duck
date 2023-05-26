@@ -202,7 +202,7 @@ class MyClient(discord.Client):
             return
         os.system("poetry install")
         await message.channel.send('Restarting.')
-        subprocess.Popen(["bash", "hard-restart.sh"])
+        subprocess.Popen(["bash", "restart.sh"])
         return
 
 
