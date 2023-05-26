@@ -12,7 +12,6 @@ import shlex
 
 from typing import TypedDict
 
-import psutil as psutil
 from discord import ChannelType
 
 logging.basicConfig(level=logging.DEBUG)
