@@ -1,4 +1,33 @@
-Bit is a Python object visually represented as an arrow that can move in a two-dimensional grid known as its world. The orientation of Bit (the direction to which Bit is facing) may be left, right, up, or down. Bit cannot have multiple orientations at the same time. Bit does not have the ability to resize a grid or move out of its world. For a Bit world to be correct, all boxes must be painted with the correct color and Bit must end in the correct box. If Bit attempts to move out of bounds, it will output the following message to the user: 'Bit tried to move to [x y], but that is out of bounds', where x and y are the coordinates of Bit in the grid. The functions of Bit are described below. For description purposes, the words 'box', 'square', and 'space'; 'white' and 'empty'; and 'direction' and 'orientation are used interchangeably.
+Bit is a Python object visually represented as an arrow that can move in a two-dimensional grid known as its world. 
+
+Each world is initialized using code similar to this:
+
+@Bit.worlds(world-name: str)
+def function_name(bit):
+    # write some code here
+
+if __name__ == "__main__":
+    function_name(Bit.new_bit)
+
+world-name is a file path to a text file with the bit world in which matplotlib interprets to make a UI for the problem.
+
+Here is an example text file:
+---
+-r-
+---
+1 1
+1
+
+The bottom line indicates the direction/orientation in which bit starts facing: 0 is right, 1 is up, 2 is left, 3 is down. Bit cannot have multiple orientations at the same time.
+
+The second line from the bottom indicates the x y coordinates of bit. For example, 0 0 would be the bottom left corner. The x coordinate represents the column number, while the y coordinate represents the row number. We start counting at 0 in both cases. Rows are counted from bottom to top. Columns are counted from left to right.
+
+Hyphens represent white tiles while r, b, g, and k represent red, blue, green, and black, respectively.
+
+Bit is given two worlds: a start world and a finish world. A start world is the world in which Bit starts. Bit is expected to move through and/or paint specific boxes according to what the finish world has. Bit is also expected to match the coordinates of the position in the finish file, which is the ending position.
+
+
+Bit cannot have multiple orientations at the same time. Bit does not have the ability to resize a grid or move out of its world. For a Bit world to be correct, all boxes must be painted with the correct color and Bit must end in the correct box. If Bit attempts to move out of bounds, it will output the following message to the user: 'Bit tried to move to [x y], but that is out of bounds', where x and y are the coordinates of Bit in the grid. The functions of Bit are described below. For description purposes, the words 'box', 'square', and 'space'; 'white' and 'empty'; and 'direction' and 'orientation are used interchangeably.
 
 Bit has a moving function, which is bit.move(). It makes Bit move forward one space.
 
@@ -44,4 +73,70 @@ For homework 1a, you must assume that students you are helping are beginners in 
 
 Homework 1a consists of four problems: 'Fix me', 'Fix me too!', 'Make me smile', and 'Picasso'.
 
-In 'Fix me', Bit starts in a blank 5x3 world. Bit's starting position is on the leftmost box in the last row. Bit's goal is to paint the first three boxes of the last row green and the third box of the penultimate row blue. Bit must end on the third box in the penultimate row.
+Here are the start and finish world files for each problem:
+
+1) Fix me
+
+Start world file:
+-----
+-----
+-----
+0 0 
+0
+
+Finish world file:
+-----
+--b--
+ggg--
+2 1
+1
+
+2) Fix me too!
+
+Start world file:
+-----
+-----
+-----
+0 0 
+0
+
+Finish world file:
+-----
+r--g-
+-br--
+0 1
+2
+
+3) Make me smile
+
+Start world file:
+-------
+-b---b-
+-------
+-------
+-------
+-------
+0 0
+1
+
+Finish world file:
+-------
+-b---b-
+-------
+-b---b-
+--bbb--
+-------
+5 2
+1
+
+4) Picasso
+
+Start world file:
+------
+gbrgbr
+------
+5 1
+0
+
+Picasso does not have a finish world file. Instead, students are expected to use to move, turn, and/or paint at least 20 times.
+
