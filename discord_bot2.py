@@ -227,6 +227,8 @@ class MyClient(discord.Client):
                 while len(output > 1000):
                     await message.channel.send(f'Output: ```{output[:1000]}```')
                     output = output[1000:]
+
+                await message.channel.send(f'Output: ```{output}```')
                 await message.channel.send(f'Done.')
                 return
 
