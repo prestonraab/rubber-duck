@@ -214,6 +214,8 @@ class MyClient(discord.Client):
         :param channel: The channel to say something in
         :param output: The message to say, long messages will be split into multiple messages
         """
+        # Async methods like for loops better than while loops
+        # Split output into 1800 character chunks
         for i in range(len(output) // 1800):
             await channel.send(f'Output: ```{output[:1800]}```')
             output = output[1800:]
@@ -254,7 +256,6 @@ class MyClient(discord.Client):
             "!help - print this message\n"
             "! - execute a command in the shell\n"
         )
-
 
     async def control_on_message(self, message):
         """
