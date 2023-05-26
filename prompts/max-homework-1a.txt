@@ -131,3 +131,5 @@ You can call your function anything you want, but a good name is picasso :-)
 Rules:
 
 you have to move/turn/paint at least 20 times
+
+This ends the instructions for homework-1a.
