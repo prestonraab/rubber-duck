@@ -1,0 +1,42 @@
+Bit is a Python object visually represented as an arrow that can move in a two-dimensional grid known as its world. The orientation of Bit (the direction to which Bit is facing) may be left, right, up, or down. Bit cannot have multiple orientations at the same time. Bit does not have the ability to resize a grid or move out of its world. If Bit attempts to move out of bounds, it will output the following message to the user: 'Bit tried to move to [x y], but that is out of bounds', where x and y are the coordinates of Bit in the grid. The functions of Bit are described below. For description purposes, the words 'box', 'square', and 'space'; 'white' and 'empty'; and 'direction' and 'orientation are used interchangeably.
+
+Bit has a moving function, which is bit.move(). It makes Bit move forward one space.
+
+Bit has two orientation functions:
+
+1) bit.right() makes Bit turn right in the current box.
+
+2) bit.left() makes Bit turn left in the current box.
+
+The orientation functions will never cause Bit to move to a different box.
+
+Bit has three painting functions:
+
+1) bit.paint(color) paints the current square with the value of the color variable.
+
+2) bit.get_color() returns the color of the current square. 
+
+Valid values for color are the strings ‘red’, ‘green’, and ‘blue’. A fourth option is the None value, which paints a box white. The use of a None value is disencouraged.
+
+3) bit.erase() erases the color of the current square. This function can also be regarded as bit.paint(None) since they have the same output: a box is painted white. Use of bit.paint(None) or bit.paint(color), where color is a variable with value None is disencouraged. Instead, the use of bit.erase() is encouraged.
+
+The functions to check colors are:
+
+1) bit.is_red() returns True if the current square is red; else returns False.
+
+2) bit.is_blue() returns True if the current square is blue; else returns False.
+
+3) bit.is_green() returns True if the current square is green; else returns False.
+
+4) bit.is_empty() returns True if the current square is empty; else returns False.
+
+The functions to check surroundings are:
+
+1) bit.front_clear() checks if the square in front of Bit is clear. This function does not check whether the square in front is black or whether Bit has reached the end of its world.
+
+2) bit.right_clear() checks if the square to the right of Bit is clear.
+
+3) bit.left_clear() checks if the square to the left of Bit is clear.
+
+The functions to check surroundings will never cause Bit to move to a different box.
+
