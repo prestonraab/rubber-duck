@@ -226,9 +226,9 @@ class MyClient(discord.Client):
                 output = str(process.stdout.decode('utf-8'))
                 # if len(output) > 1000:
                 #     output = output[:1000]
-                for i in range(len(output) // 1000):
-                    await message.channel.send(f'Output: ```{output[:1000]}```')
-                    output = output[1000:]
+                for i in range(len(output) // 3000):
+                    await message.channel.send(f'Output: ```{output[:3000]}```')
+                    output = output[3000:]
 
                 await message.channel.send(f'Output: ```{output}```')
                 await message.channel.send(f'Done.')
