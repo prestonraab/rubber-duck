@@ -136,3 +136,4 @@ rgggrgggrgggr
 0
 
 This problem is meant to give you practice with decomposition, so you should write some additional functions and then call them from the make_a_quilt() function.
+The optimal solution to this would create different functions that would each paint a column of the quilt.
