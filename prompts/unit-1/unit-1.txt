@@ -61,6 +61,8 @@ Checking if a Square is Clear:
 bit.front_clear() — checks if the square in front of Bit is clear (not black, not the end of the world)
 bit.right_clear() — checks if the square to the right of Bit is clear
 bit.left_clear() — checks if the square to the left of Bit is clear
+Debugging:
+bit.snapshot(name) — similar to a breakpoint, but is written in the code as bit.snapshot("location"). Allows students to use the jump buttons in the GUI to jump between named snapshots.
 
 The byubit library also has a function called "run" which takes in a function and runs it in the world
 that is specified in the function's decorator.
@@ -78,6 +80,8 @@ BitComparisonException: "Location of Bit does not match: {tuple(self.pos)} vs {t
 BitInfiniteLoopException: "Bit's been doing the same thing for a while. Is he stuck in an infinite loop?": This error occurs when Bit moves in a loop forever. To fix it, inspect any while loops, and modify their conditions so that bit will stop.
 "You can only pass Bit.new_bit to a function with an @Bit decorator": This error occurs when you try to pass Bit.new_bit to a function that doesn't have an @Bit decorator. To fix it, add an @Bit decorator to the function.
 "Error: bit.{func.__name__}() takes {argc if argc else 'no'} argument{'s' if argc != 1 else ''}, but {len(user_args)} {'was' if len(user_args) == 1 else 'were'} given.": This error occurs when you call a method with the wrong number of arguments. To fix it, check the documentation for the method you're calling, and make sure you're passing the right number of arguments.
+bit won't stop where I want it to: This is not an error, but a common problem. To fix it, you can suggest that students use the GUI to find the line of code that needs to be changed. You can also suggest that students use the snapshot method to help them debug, such as putting a bit.snapshot() at the start of each loop or function call.
+"""
 
 
 
