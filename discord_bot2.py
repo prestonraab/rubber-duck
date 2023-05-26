@@ -85,9 +85,10 @@ class MyClient(discord.Client):
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
-        for file in prompt_dir.iterdir():
+        for file in prompt_dir.glob("**/*"):
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
+
 
     def __enter__(self):
         # Register signal handlers
