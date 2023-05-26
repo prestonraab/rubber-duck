@@ -223,12 +223,12 @@ class MyClient(discord.Client):
                 errors = process.stderr.decode('utf-8')
                 if errors:
                     await message.channel.send(f'Errors: ```{errors}```')
-                output = process.stdout.decode('utf-8')
+                output = str(process.stdout.decode('utf-8'))
                 if len(output) > 1000:
                     output = output[:1000]
-                # while len(output > 1000):
-                #     await message.channel.send(f'Output: ```{output[:1000]}```')
-                #     output = output[1000:]
+                while len(output > 1000):
+                    await message.channel.send(f'Output: ```{output[:1000]}```')
+                    output = output[1000:]
 
                 await message.channel.send(f'Output: ```{output}```')
                 await message.channel.send(f'Done.')
