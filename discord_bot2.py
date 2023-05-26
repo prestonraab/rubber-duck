@@ -174,6 +174,63 @@ class MyClient(discord.Client):
                     await channel.send('Done.')
             self.restarted = False
 
+    async def restart(self, message):
+        """
+        Restart the bot
+        :param message: The message that triggered the restart, used to get the branch name
+        """
+        await message.channel.send(f'Restart requested.')
+        message_parser = argparse.ArgumentParser()
+        message_parser.add_argument('--branch', default='master')
+        split_args = shlex.split(message.content)[1:]
+        try:
+            message_args = message_parser.parse_args(split_args)
+        except Exception as e:
+            await message.channel.send(f'Error parsing arguments: {e}')
+            return
+
+        await message.channel.send(f'Arguments processed: {split_args}')
+        os.chdir(Path(__file__).parent)
+        if os.system(f"git checkout {message_args.branch}") != 0:
+            await message.channel.send(f'Error checking out {message_args.branch} branch.')
+            return
+        if os.system("git clean -f") != 0:
+            await message.channel.send('Error cleaning git.')
+            return
+        if os.system("git pull") != 0:
+            await message.channel.send('Error pulling from git.')
+            return
+        os.system("poetry install")
+        await message.channel.send('Restarting.')
+        subprocess.Popen(["bash", "hard-restart.sh"])
+        return
+
+
+    async def execute_command(self, message):
+        """
+        Execute a command in the shell and return the output to the channel
+        :param message: discord.Message object, used to get the command
+        """
+        split_args = shlex.split(message.content[1:])
+        # Run command using shell and pipe output to channel
+        await message.channel.send(f'Command processed: {split_args}')
+        process = subprocess.run(message.content[1:], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Get output of command and send to channel
+        errors = process.stderr.decode('utf-8')
+        if errors:
+            await message.channel.send(f'Errors: ```{errors}```')
+        output = str(process.stdout.decode('utf-8'))
+        # if len(output) > 1000:
+        #     output = output[:1000]
+        for i in range(len(output) // 1800):
+            await message.channel.send(f'Output: ```{output[:1800]}```')
+            output = output[1800:]
+
+        await message.channel.send(f'Output: ```{output}```')
+        await message.channel.send(f'Done.')
+        return
+
+
     async def on_message(self, message):
         """
         This function is called whenever the bot sees a message in a channel
@@ -192,50 +249,9 @@ class MyClient(discord.Client):
 
         if message.channel.name == 'restart-duck':
             if message.content.startswith('!restart'):
-                await message.channel.send(f'Restart requested.')
-                message_parser = argparse.ArgumentParser()
-                message_parser.add_argument('--branch', default='master')
-                split_args = shlex.split(message.content)[1:]
-                try:
-                    message_args = message_parser.parse_args(split_args)
-                except Exception as e:
-                    await message.channel.send(f'Error parsing arguments: {e}')
-                    return
-
-                await message.channel.send(f'Arguments processed: {split_args}')
-                os.chdir(Path(__file__).parent)
-                if os.system(f"git checkout {message_args.branch}") != 0:
-                    await message.channel.send(f'Error checking out {message_args.branch} branch.')
-                    return
-                if os.system("git clean -f") != 0:
-                    await message.channel.send('Error cleaning git.')
-                    return
-                if os.system("git pull") != 0:
-                    await message.channel.send('Error pulling from git.')
-                    return
-                os.system("poetry install")
-                await message.channel.send('Restarting.')
-                subprocess.Popen(["bash", "hard-restart.sh"])
-                return
+                await self.restart(message)
             elif message.content.startswith('!'):
-                split_args = shlex.split(message.content[1:])
-                # Run command using shell and pipe output to channel
-                await message.channel.send(f'Command processed: {split_args}')
-                process = subprocess.run(message.content[1:], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                # Get output of command and send to channel
-                errors = process.stderr.decode('utf-8')
-                if errors:
-                    await message.channel.send(f'Errors: ```{errors}```')
-                output = str(process.stdout.decode('utf-8'))
-                # if len(output) > 1000:
-                #     output = output[:1000]
-                for i in range(len(output) // 1800):
-                    await message.channel.send(f'Output: ```{output[:1800]}```')
-                    output = output[1800:]
-
-                await message.channel.send(f'Output: ```{output}```')
-                await message.channel.send(f'Done.')
-                return
+                await self.execute_command(message)
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
