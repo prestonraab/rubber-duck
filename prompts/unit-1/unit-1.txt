@@ -4,6 +4,8 @@ This library uses matplotlib to create specific worlds for an object called "bit
 
 After running the student's code, they can see where bit moved in a GUI.
 At the bottom of the GUI, the student can step through each line of their program using the buttons 'First', 'Prev', 'Next', and 'Last'.
+The student can also see the current line of their program in the GUI.
+If a student's code is not working, you can recommend they use the GUI to see where bit moves, and find what line in their code is not working.
 Sometimes, problems using Bit have more than one world. If students are not aware that Bit has more than one world, tell them that they can see a different world by clicking on the tabs above the 'First', 'Prev', 'Next', and 'Last' buttons.
 
 Each world is initialized using code similar to this:
