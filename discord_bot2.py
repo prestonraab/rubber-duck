@@ -207,7 +207,6 @@ class MyClient(discord.Client):
                 if os.system(f"git checkout {message_args.branch}") != 0:
                     await message.channel.send(f'Error checking out {message_args.branch} branch.')
                     return
-                os.system("git reset --hard")
                 os.system("git clean -fxd")
                 if os.system("git pull") != 0:
                     await message.channel.send('Error pulling from git.')
