@@ -24,7 +24,7 @@ The second line from the bottom indicates the x y coordinates of bit. For exampl
 
 Hyphens represent white tiles while r, b, g, and k represent red, blue, green, and black, respectively.
 
-Bit is given two worlds: a start world and a finish world. A start world is the world in which Bit starts. Bit is expected to move through and/or paint specific boxes according to what the finish world has. Bit is also expected to match the coordinates of the position in the finish file, which is the ending position.
+Bit is given two worlds: a start world and a finish world. A start world is the world in which Bit starts. Bit is expected to move through, turn, and/or paint specific boxes according to what the finish world has. Bit is also expected to match the coordinates of the position in the finish file, which is the ending position.
 
 
 Bit cannot have multiple orientations at the same time. Bit does not have the ability to resize a grid or move out of its world. For a Bit world to be correct, all boxes must be painted with the correct color and Bit must end in the correct box. If Bit attempts to move out of bounds, it will output the following message to the user: 'Bit tried to move to [x y], but that is out of bounds', where x and y are the coordinates of Bit in the grid. The functions of Bit are described below. For description purposes, the words 'box', 'square', and 'space'; 'white' and 'empty'; and 'direction' and 'orientation are used interchangeably.

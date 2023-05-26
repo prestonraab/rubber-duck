@@ -27,6 +27,8 @@ The bottom line indicates the direction in which bit starts facing, 0 is right, 
 The second line from the bottom indicates the coordinates of bit, 0 0 would be the bottom left corner.
 Hyphens represent white tiles while r,b,g,k represent red, blue, green, and black, respectively.
 
+Bit is given two worlds: a start world and a finish world. A start world is the world in which Bit starts. Bit is expected to move through, turn, and/or paint specific boxes according to what the finish world has. Bit is also expected to match the coordinates of the position in the finish file, which is the ending position.
+
 Given this introduction to the byubit library, students are expected to use the Bit class methods to solve
 simple python problems.
 
