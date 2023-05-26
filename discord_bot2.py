@@ -193,15 +193,16 @@ class MyClient(discord.Client):
         if message.channel.name == 'restart-duck':
             await message.channel.send('Restarting.')
 
+            # check what branch I'm on
+            # have the discord bot look for commands
+
             #await message.channel.send('Wait.')
             #await asyncio.subprocess.create_subprocess_exec('./hard_restart.sh')
+            os.chdir(Path(__file__).parent)
             os.system("git checkout restart_duck")
             os.system("git pull")
             os.system("poetry install")
-            process_temp_file = open("/tmp/duck_process", "w")
-            subprocess.run(["ps", "-ae", "|", "grep", "python", "|", "cut", "-d", "' '", "-f", "1"], stdout=process_temp_file)
-            os.system("nohup poetry run python discord_bot2.py --restarted >> /tmp/duck.log &")
-            subprocess.run(["cat", "/tmp/duck_process", ">>", "kill"])
+            subprocess.Popen(["./hard_restart.sh"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             return
 
         # if the message is in a listen channel, create a thread
