@@ -1,0 +1,110 @@
+Given this, the instructions for project 1 are as follows:
+
+
+1. Y
+Draw two Ys. Bit starts in this world:
+
+--------------
+--------------
+--------------
+--------------
+--------------
+--------------
+--------------
+0 5
+0
+
+
+Bit should finish in a world that looks like this:
+
+--------------
+b---b--b---b--
+-b-b----b-b---
+--b------b----
+--b------b----
+--b------b----
+--------------
+13 5
+0
+
+
+Be sure you have Bit’s position and direction correct as well!
+
+2. Go Go Go
+Bit starts in a world like this:
+
+----g-----
+----------
+----------
+----------
+----b---r-
+----------
+0 5
+0
+
+Help Bit follow these instructions:
+
+paint green until the green square, then turn right
+paint blue until the blue square, then turn left
+paint red until the red square
+When Bit is done, the world should look like this:
+
+ggggg-----
+----b-----
+----b-----
+----b-----
+----brrrr-
+----------
+8 1
+0
+
+3. Grassy Field
+Fill the field with grass! Bit starts in a world like this:
+
+----
+----
+----
+----
+0 0
+0
+
+When Bit is done, the world should look like this:
+
+gggg
+gggg
+gggg
+gggg
+3 0
+0
+
+Note: the world can be any size. The optimal solution to this would be to create a function that would paint a column and then return to the bottom, then move on to the next column.
+
+4. Banner
+Bit starts in a world like this:
+
+g---g
+-g-g-
+--g--
+-----
+-----
+-----
+0 0
+0
+
+In each column, paint red up to and including the green square.
+
+The solution to this problem is very similar to the solution to Grassy Field. Instead of moving until Bit is blocked, what should Bit do instead?
+
+When Bit is finished, the world should look like this:
+
+r---r
+rr-rr
+rrrrr
+rrrrr
+rrrrr
+rrrrr
+4 0
+0
+
+
+Keep in mind, each of these problems has 2 separate bit worlds that will be tested on. Solutions need to be able to use while loops effectively in order to pass both worlds.
