@@ -170,7 +170,7 @@ class MyClient(discord.Client):
         if self.restarted:
             channels = self.get_all_channels()
             for channel in channels:
-                if channel.name == 'restart-duck':
+                if channel.name == 'control-duck':
                     await channel.send('Done.')
             self.restarted = False
 
