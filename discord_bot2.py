@@ -215,13 +215,16 @@ class MyClient(discord.Client):
                 message_args = shlex.split(message.content[1:])
                 # Run command using shell and pipe output to channel
                 await message.channel.send(f'Command processed: {message_args}')
-                process = subprocess.run(message_args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                # Get output of command and send to channel
-                errors = process.stderr.decode('utf-8')
-                if errors:
-                    await message.channel.send(f'Errors: ```{errors}```')
-                output = process.stdout.decode('utf-8')
-                await message.channel.send(f'Output: ```{output}```')
+                process = subprocess.Popen(message_args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                                           , universal_newlines=True, bufsize=1)
+                # Send output to channel as it is generated
+                while True:
+                    output = process.stdout.readline()
+                    if output == '' and process.poll() is not None:
+                        break
+                    if output:
+                        await message.channel.send(output.strip())
+
                 await message.channel.send(f'Done.')
                 return
 
