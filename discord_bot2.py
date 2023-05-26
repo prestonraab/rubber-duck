@@ -306,8 +306,8 @@ class MyClient(discord.Client):
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
             prefix = self.prompts["duck-pond"]
-            if message.channel.category.name in self.prompts:
-                prefix += self.prompts[message.channel.category.name]
+            if message.channel.category.name.lower() in self.prompts:
+                prefix += self.prompts[message.channel.category.name.lower()]
             prefix += self.prompts[message.channel.name]
             await self.create_conversation(prefix, message)
 
