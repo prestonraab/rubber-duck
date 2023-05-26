@@ -196,7 +196,11 @@ class MyClient(discord.Client):
                 message_parser = argparse.ArgumentParser()
                 message_parser.add_argument('--branch', default='master')
                 split_args = shlex.split(message.content)[1:]
-                message_args = message_parser.parse_args(split_args)
+                try:
+                    message_args = message_parser.parse_args(split_args)
+                except Exception as e:
+                    await message.channel.send(f'Error parsing arguments: {e}')
+                    return
 
                 await message.channel.send(f'Arguments processed: {split_args}')
                 os.chdir(Path(__file__).parent)
