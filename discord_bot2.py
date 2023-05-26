@@ -247,7 +247,7 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
-        if message.channel.name == 'restart-duck':
+        if message.channel.name == 'control-duck':
             if message.content.startswith('!restart'):
                 await self.restart(message)
             elif message.content.startswith('!'):
