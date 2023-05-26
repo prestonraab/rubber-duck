@@ -196,9 +196,10 @@ class MyClient(discord.Client):
                 await message.channel.send(f'Restart requested.')
                 message_parser = argparse.ArgumentParser()
                 message_parser.add_argument('--branch', default='master')
-                message_args = message_parser.parse_args(shlex.split(message.content)[1:])
+                split_args = shlex.split(message.content)[1:]
+                message_args = message_parser.parse_args(split_args)
 
-                await message.channel.send(f'Arguments processed: {message_args}')
+                await message.channel.send(f'Arguments processed: {split_args}')
                 os.chdir(Path(__file__).parent)
                 if os.system(f"git checkout {message_args.branch}") != 0:
                     await message.channel.send(f'Error checking out {message_args.branch} branch.')
@@ -211,7 +212,7 @@ class MyClient(discord.Client):
                 subprocess.Popen(["bash", "hard-restart.sh"])
                 return
             elif message.content.startswith('!'):
-                message_args = shlex.split(message.content)[1:]
+                message_args = shlex.split(message.content[1:])
                 # Run command using shell and pipe output to channel
                 await message.channel.send(f'Arguments processed: {message_args}')
                 process = subprocess.Popen(message_args, shell=True, stdout=subprocess.PIPE)
