@@ -245,7 +245,17 @@ class MyClient(discord.Client):
         await self.execute_command(message.content[1:], message.channel)
         return
 
-    async def on_message(self, message):
+    async def display_help(self, message):
+        await message.channel.send(
+            "!restart [branch] - restart the bot, optionally on a different branch\n"
+            "!log - print the log file\n"
+            "!rmlog - remove the log file\n"
+            "!status - print a status message\n"
+            "!help - print this message\n"
+            "! - execute a command in the shell\n"
+        )
+
+    async def on_message(self, message: discord.Message):
         """
         This function is called whenever the bot sees a message in a channel
         If the message is in a listen channel
@@ -262,25 +272,24 @@ class MyClient(discord.Client):
             return
 
         if message.channel.name == 'control-duck':
-            if message.content.startswith('!restart'):
+            content = message.content
+            if content.startswith('!restart'):
                 await self.restart(message)
-            elif message.content.startswith('!log'):
+
+            elif content.startswith('!log'):
                 await self.execute_command("cat /tmp/duck.log", message.channel)
-            elif message.content.startswith('!rmlog'):
+
+            elif content.startswith('!rmlog'):
                 await self.execute_command("rm /tmp/duck.log", message.channel)
                 await self.execute_command("touch /tmp/duck.log", message.channel)
-            elif message.content.startswith('!status'):
+
+            elif content.startswith('!status'):
                 await message.channel.send('I am alive.')
-            elif message.content.startswith('!help'):
-                await message.channel.send(
-                    " !restart [branch] - restart the bot, optionally on a different branch\n"
-                    " !log - print the log file\n"
-                    " !rmlog - remove the log file\n"
-                    " !status - print a status message\n"
-                    " !help - print this message\n"
-                    " ! - execute a command in the shell\n"
-                    )
-            elif message.content.startswith('!'):
+
+            elif content.startswith('!help'):
+                await self.display_help(message)
+
+            elif content.startswith('!'):
                 await self.execute_message(message)
             return
 
