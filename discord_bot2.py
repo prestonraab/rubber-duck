@@ -230,6 +230,37 @@ class MyClient(discord.Client):
         await message.channel.send(f'Done.')
         return
 
+    async def spawn(self, message):
+        """
+        Spawn a new bot instance
+        :param message: The message that triggered the spawn, used to get the branch name
+        """
+        await message.channel.send(f'Spawn requested.')
+        message_parser = argparse.ArgumentParser()
+        message_parser.add_argument('--branch', default='master')
+        split_args = shlex.split(message.content)[1:]
+        try:
+            message_args = message_parser.parse_args(split_args)
+        except Exception as e:
+            await message.channel.send(f'Error parsing arguments: {e}')
+            return
+
+        await message.channel.send(f'Arguments processed: {split_args}')
+        os.chdir(Path(__file__).parent)
+        if os.system(f"git checkout {message_args.branch}") != 0:
+            await message.channel.send(f'Error checking out {message_args.branch} branch.')
+            return
+        if os.system("git clean -f") != 0:
+            await message.channel.send('Error cleaning git.')
+            return
+        if os.system("git pull") != 0:
+            await message.channel.send('Error pulling from git.')
+            return
+        os.system("poetry install")
+        await message.channel.send('Spawning.')
+        subprocess.Popen(["bash", "spawn.sh"])
+        return
+
 
     async def on_message(self, message):
         """
@@ -250,6 +281,8 @@ class MyClient(discord.Client):
         if message.channel.name == 'control-duck':
             if message.content.startswith('!restart'):
                 await self.restart(message)
+            elif message.content.startswith('!spawn'):
+                await self.spawn(message)
             elif message.content.startswith('!'):
                 await self.execute_command(message)
 
