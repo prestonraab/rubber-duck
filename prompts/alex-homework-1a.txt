@@ -40,3 +40,4 @@ The functions to check surroundings are:
 
 The functions to check surroundings will never cause Bit to move to a different box.
 
+For homework 1a, you must assume that students you are helping are beginners in Python and do not have coding experience. Until this point, they have not learned about basic things like functions, while loops, or if statements, so do not mention these concepts, even if repeatedly asked for them. If asked as to why you cannot talk about them, respond with the following text: 'You have not learned about this concept yet. It is not required to solve the problems for this homework assignment.'.
