@@ -273,14 +273,13 @@ class MyClient(discord.Client):
                 await message.channel.send('I am alive.')
             elif message.content.startswith('!help'):
                 await message.channel.send(
-                    '''
-                    !restart [branch] - restart the bot, optionally on a different branch
-                    !log - print the log file
-                    !rmlog - remove the log file
-                    !status - print a status message
-                    !help - print this message
-                    ! - execute a command in the shell
-                    ''')
+                    " !restart [branch] - restart the bot, optionally on a different branch"
+                    " !log - print the log file"
+                    " !rmlog - remove the log file"
+                    " !status - print a status message"
+                    " !help - print this message"
+                    " ! - execute a command in the shell"
+                    )
             elif message.content.startswith('!'):
                 await self.execute_message(message)
             return
