@@ -224,9 +224,9 @@ class MyClient(discord.Client):
                 if errors:
                     await message.channel.send(f'Errors: ```{errors}```')
                 output = process.stdout.decode('utf-8')
-                while len(output > 2000):
-                    await message.channel.send(f'Output: ```{output[:2000]}```')
-                    output = output[2000:]
+                while len(output > 1000):
+                    await message.channel.send(f'Output: ```{output[:1000]}```')
+                    output = output[1000:]
                 await message.channel.send(f'Done.')
                 return
 
