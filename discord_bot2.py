@@ -216,12 +216,14 @@ class MyClient(discord.Client):
                 # Run command using shell and pipe output to channel
                 await message.channel.send(f'Command processed: {message_args}')
                 process = subprocess.Popen(message_args, shell=True, stdout=subprocess.PIPE)
+                total = ""
                 while True:
                     output = process.stdout.readline().decode()
                     if output == '' and process.poll() is not None:
                         break
                     if output:
-                        await message.channel.send(output.strip())
+                        total += output
+                await message.channel.send(total)
                 await message.channel.send(f'Done.')
                 return
 
