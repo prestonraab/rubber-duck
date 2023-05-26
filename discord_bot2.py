@@ -255,6 +255,33 @@ class MyClient(discord.Client):
             "! - execute a command in the shell\n"
         )
 
+
+    async def control_on_message(self, message):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        :param message:
+        :return:
+        """
+        content = message.content
+        if content.startswith('!restart'):
+            await self.restart(message)
+
+        elif content.startswith('!log'):
+            await self.execute_command("cat /tmp/duck.log", message.channel)
+
+        elif content.startswith('!rmlog'):
+            await self.execute_command("rm /tmp/duck.log", message.channel)
+            await self.execute_command("touch /tmp/duck.log", message.channel)
+
+        elif content.startswith('!status'):
+            await message.channel.send('I am alive.')
+
+        elif content.startswith('!help'):
+            await self.display_help(message)
+
+        elif content.startswith('!'):
+            await self.execute_message(message)
+
     async def on_message(self, message: discord.Message):
         """
         This function is called whenever the bot sees a message in a channel
@@ -272,25 +299,7 @@ class MyClient(discord.Client):
             return
 
         if message.channel.name == 'control-duck':
-            content = message.content
-            if content.startswith('!restart'):
-                await self.restart(message)
-
-            elif content.startswith('!log'):
-                await self.execute_command("cat /tmp/duck.log", message.channel)
-
-            elif content.startswith('!rmlog'):
-                await self.execute_command("rm /tmp/duck.log", message.channel)
-                await self.execute_command("touch /tmp/duck.log", message.channel)
-
-            elif content.startswith('!status'):
-                await message.channel.send('I am alive.')
-
-            elif content.startswith('!help'):
-                await self.display_help(message)
-
-            elif content.startswith('!'):
-                await self.execute_message(message)
+            await self.control_on_message(message)
             return
 
         # if the message is in a listen channel, create a thread
@@ -306,6 +315,7 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
+
 
     async def create_conversation(self, prefix, message):
         """
