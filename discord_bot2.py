@@ -7,8 +7,9 @@ import subprocess
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
-
 import argparse
+import shlex
+
 from typing import TypedDict
 
 import psutil as psutil
@@ -191,19 +192,35 @@ class MyClient(discord.Client):
             return
 
         if message.channel.name == 'restart-duck':
-            await message.channel.send('Restarting.')
+            if message.content.startswith('!restart'):
+                await message.channel.send(f'Restart requested.')
+                message_parser = argparse.ArgumentParser()
+                message_parser.add_argument('--branch', default='master')
+                message_args = message_parser.parse_args(shlex.split(message.content)[1:])
 
-            # check what branch I'm on
-            # have the discord bot look for commands
-
-            #await message.channel.send('Wait.')
-            #await asyncio.subprocess.create_subprocess_exec('./hard_restart.sh')
-            os.chdir(Path(__file__).parent)
-            os.system("git checkout restart_duck")
-            os.system("git pull")
-            os.system("poetry install")
-            subprocess.Popen(["./hard_restart.sh"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            return
+                await message.channel.send(f'Arguments processed: {message_args}')
+                os.chdir(Path(__file__).parent)
+                if os.system(f"git checkout {message_args.branch}") != 0:
+                    await message.channel.send(f'Error checking out {message_args.branch} branch.')
+                    return
+                if os.system("git pull") != 0:
+                    await message.channel.send('Error pulling from git.')
+                    return
+                os.system("poetry install")
+                await message.channel.send('Restarting.')
+                subprocess.Popen(["bash", "hard-restart.sh"])
+                return
+            elif message.content.startswith('!'):
+                message_args = shlex.split(message.content)[1:]
+                # Run command using shell and pipe output to channel
+                await message.channel.send(f'Arguments processed: {message_args}')
+                process = subprocess.Popen(message_args, shell=True, stdout=subprocess.PIPE)
+                while True:
+                    output = process.stdout.readline().decode()
+                    if output == '' and process.poll() is not None:
+                        break
+                    if output:
+                        await message.channel.send(output.strip())
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
