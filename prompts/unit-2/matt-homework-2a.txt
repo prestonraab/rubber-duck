@@ -1,0 +1,157 @@
+Homework 2a — If
+
+This is the first homework in which students will have practice with if statements.
+Optimal solutions should therefore use simple and effective if statements.
+
+
+1. Invert
+Bit needs to invert all the blue squares. For example, if Bit starts in this world:
+
+----------
+gb--bb--b-
+----------
+0 1
+0
+
+then the final world needs to look like this:
+
+----------
+g-bb--bb-b
+----------
+9 1
+0
+
+
+To check if a square is empty, use:
+
+bit.is_empty()
+
+To erase the color in any square, use:
+
+bit.erase()
+
+Use the starter code in invert.py to write your code. The starter code is:
+
+```python
+from byubit import Bit
+
+
+@Bit.worlds('invert', 'invert2', 'invert-careful')
+def go(bit):
+    # Write code here
+    pass
+
+
+if __name__ == '__main__':
+    go(Bit.new_bit)
+```
+
+Be sure to check all three worlds! You will also see a world called invert2:
+
+----------
+g-b-bbb-b-
+----------
+0 1
+0
+
+and a world called invert-careful:
+
+--------------
+g-bgb--br-b-b-
+--------------
+0 1
+0
+
+2. Wander
+Bit starts in this world:
+
+g--g----
+g-----b-
+------b-
+---g----
+0 0
+0
+
+Bit follows these rules:
+
+Bit moves until it’s blocked in front
+Bit turns left when encountering a green square
+Bit turns right when encountering a blue square
+Bit paints empty squares red
+The final world should look like this:
+
+grrg----
+grrrrrb-
+rrrrrrb-
+rrrg----
+0 1
+2
+
+
+Use the starter code in wander.py to write your code. The starter code is:
+
+```python
+from byubit import Bit
+
+
+@Bit.worlds('wander', 'wander2')
+def go(bit):
+    # Write code here
+    pass
+
+
+if __name__ == '__main__':
+    go(Bit.new_bit)
+```
+
+Be sure to check both worlds! You will see a second world called wander2:
+
+-----b-b
+-g-----b
+-----b-g
+-------g
+0 0
+0
+
+3. Fix the pipe
+Bit is inside a pipe and wants to patch the holes. The starting world looks like this:
+
+kkkk-kkkk-
+----------
+kk-kkkk-kk
+0 1
+0
+
+Bit patches the holes with blue sealant. So when Bit is finished, the world should look like this:
+
+kkkkbkkkkb
+----------
+kkbkkkkbkk
+9 1
+0
+
+Use the starter code in fix_pipe.py to write your code. The starter code is:
+
+```python
+from byubit import Bit
+
+
+@Bit.worlds('fix-pipe')
+def go(bit):
+    # Write code here
+    pass
+
+
+if __name__ == '__main__':
+    go(Bit.new_bit)
+```
+
+
+Grading
+Activity	Points
+invert.py	5
+wander.py	5
+fix_pipe.py	10
+
+
+Manual grading will focus on decomposition and correct use of if, elif, and else.
