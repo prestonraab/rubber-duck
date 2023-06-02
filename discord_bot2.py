@@ -2,9 +2,8 @@ import json
 import os
 import logging
 import signal
-import asyncio.subprocess
 import subprocess
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 import argparse
@@ -71,7 +70,7 @@ class Conversation:
 
 
 class MyClient(discord.Client):
-    def __init__(self, prompt_dir: Path, conversation_dir: Path, restarted: bool = False):
+    def __init__(self, prompt_dir: Path, conversation_dir: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
@@ -81,7 +80,6 @@ class MyClient(discord.Client):
         self.conversation_dir = conversation_dir
         self.conversations = {}
         self.guild_dict = {}  # Loaded in on_ready
-        self.restarted = restarted
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
@@ -176,25 +174,12 @@ class MyClient(discord.Client):
     async def restart(self, message):
         """
         Restart the bot
-        :param message: The message that triggered the restart, used to get the branch name
+        :param message: The message that triggered the restart
         """
         await message.channel.send(f'Restart requested.')
-        message_parser = argparse.ArgumentParser()
-        message_parser.add_argument('--branch', default='master')
-        split_args = shlex.split(message.content)[1:]
-        try:
-            message_args = message_parser.parse_args(split_args)
-        except Exception as e:
-            await message.channel.send(f'Error parsing arguments: {e}')
-            return
-
-        await message.channel.send(f'Arguments processed: {split_args}')
         os.chdir(Path(__file__).parent)
         if os.system(f"git fetch") != 0:
             await message.channel.send(f'Error fetching from git.')
-            return
-        if os.system(f"git checkout {message_args.branch}") != 0:
-            await message.channel.send(f'Error checking out {message_args.branch} branch.')
             return
         if os.system("git clean -f") != 0:
             await message.channel.send('Error cleaning git.')
@@ -248,12 +233,11 @@ class MyClient(discord.Client):
 
     async def display_help(self, message):
         await message.channel.send(
-            "!restart [branch] - restart the bot, optionally on a different branch\n"
+            "!restart - restart the bot"
             "!log - print the log file\n"
             "!rmlog - remove the log file\n"
             "!status - print a status message\n"
             "!help - print this message\n"
-            "! - execute a command in the shell\n"
         )
 
     async def control_on_message(self, message):
@@ -402,8 +386,8 @@ class MyClient(discord.Client):
             await self.send(thread, response)
 
 
-def main(prompts: Path, conversations: Path, restarted: bool):
-    with MyClient(prompts, conversations, restarted) as client:
+def main(prompts: Path, conversations: Path):
+    with MyClient(prompts, conversations) as client:
         client.run(os.environ['DISCORD_TOKEN'])
 
 
@@ -411,6 +395,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prompts', type=Path, default='prompts')
     parser.add_argument('--conversations', type=Path, default='conversations')
-    parser.add_argument('--restarted', action='store_true')
     args = parser.parse_args()
-    main(args.prompts, args.conversations, args.restarted)
+    main(args.prompts, args.conversations)
