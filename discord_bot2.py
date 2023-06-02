@@ -168,12 +168,10 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
-        if self.restarted:
-            channels = self.get_all_channels()
-            for channel in channels:
-                if channel.name == 'control-duck':
-                    await channel.send('Done.')
-            self.restarted = False
+        channels = self.get_all_channels()
+        for channel in channels:
+            if channel.name == 'control-duck':
+                await channel.send('Duck online')
 
     async def restart(self, message):
         """

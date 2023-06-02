@@ -1,5 +1,3 @@
-Bit is a Python object visually represented as an arrow that can move in a two-dimensional grid known as its world. 
-
 Each world is initialized using code similar to this:
 
 @Bit.worlds(world-name: str)
