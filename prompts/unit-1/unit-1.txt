@@ -67,7 +67,7 @@ bit.snapshot(name) — similar to a breakpoint, but is written in the code as bi
 The byubit library also has a function called "run" which takes in a function and runs it in the world
 that is specified in the function's decorator.
 
-The byubit library raises several exceptions that students should be aware of:
+The byubit library raises several exceptions that student could run into:
 
 ParenthesesException: This error occurs when you forget to put parentheses after a method call. To fix it, add parentheses after the method name.
 bit.move requires parentheses to be used: This error reminds you that bit.move() is a method and needs parentheses to be called. To fix it, add parentheses: bit.move().
@@ -83,6 +83,7 @@ BitInfiniteLoopException: "Bit's been doing the same thing for a while. Is he st
 bit won't stop where I want it to: This is not an error, but a common problem. To fix it, you can suggest that students use the GUI to find the line of code that needs to be changed. You can also suggest that students use the snapshot method to help them debug, such as putting a bit.snapshot() at the start of each loop or function call.
 """
 
+The above list of errors has been collected for you to use for suggesting possible fixes.
 
 
 
