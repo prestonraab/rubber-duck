@@ -187,7 +187,7 @@ class MyClient(discord.Client):
         if os.system("git clean -f") != 0:
             await message.channel.send('Error cleaning git.')
             return
-        if os.system("git merge --rebase=false") != 0:
+        if os.system("git pull --rebase=false") != 0:
             await message.channel.send('Error merging.')
             return
         os.system("poetry install")
