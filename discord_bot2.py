@@ -2,11 +2,13 @@ import json
 import os
 import logging
 import signal
-from dataclasses import dataclass, asdict
+import subprocess
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-
 import argparse
+import shlex
+
 from typing import TypedDict
 
 from discord import ChannelType
@@ -81,9 +83,10 @@ class MyClient(discord.Client):
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
-        for file in prompt_dir.iterdir():
+        for file in prompt_dir.glob("**/*"):
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
+
 
     def __enter__(self):
         # Register signal handlers
@@ -163,8 +166,107 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
+        channels = self.get_all_channels()
+        for channel in channels:
+            if channel.name == 'control-duck':
+                await channel.send('Duck online')
 
-    async def on_message(self, message):
+    async def restart(self, message):
+        """
+        Restart the bot
+        :param message: The message that triggered the restart
+        """
+        await message.channel.send(f'Restart requested.')
+        os.chdir(Path(__file__).parent)
+        if os.system(f"git fetch") != 0:
+            await message.channel.send(f'Error fetching from git.')
+            return
+        if os.system("git clean -f") != 0:
+            await message.channel.send('Error cleaning git.')
+            return
+        if os.system("git pull") != 0:
+            await message.channel.send('Error pulling from git.')
+            return
+        os.system("poetry install")
+        await message.channel.send('Restarting.')
+        subprocess.Popen(["bash", "restart.sh"])
+        return
+
+    async def say_in_channel(self, channel, output):
+        """
+        Say something in a channel
+        :param channel: The channel to say something in
+        :param output: The message to say, long messages will be split into multiple messages
+        """
+        # Async methods like for loops better than while loops
+        # Split output into 1800 character chunks
+        for i in range(len(output) // 1800):
+            await channel.send(f'Output: ```{output[:1800]}```')
+            output = output[1800:]
+
+        await channel.send(f'Output: ```{output}```')
+
+    async def execute_command(self, text, channel):
+        """
+        Execute a command in the shell and return the output to the channel
+        """
+        split_args = shlex.split(text)
+        # Run command using shell and pipe output to channel
+        await channel.send(f'Command processed: {split_args}')
+        process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Get output of command and send to channel
+        errors = process.stderr.decode('utf-8')
+        if errors:
+            await channel.send(f'Errors: ```{errors}```')
+        output = str(process.stdout.decode('utf-8'))
+        await self.say_in_channel(channel, output)
+        await channel.send(f'Done.')
+        return
+
+    async def execute_message(self, message):
+        """
+        Execute a command in the shell and return the output to the channel
+        :param message: discord.Message object, used to get the command
+        """
+        await self.execute_command(message.content[1:], message.channel)
+        return
+
+    async def display_help(self, message):
+        await message.channel.send(
+            "!restart - restart the bot"
+            "!log - print the log file\n"
+            "!rmlog - remove the log file\n"
+            "!status - print a status message\n"
+            "!help - print this message\n"
+        )
+
+    async def control_on_message(self, message):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        :param message:
+        :return:
+        """
+        content = message.content
+        if content.startswith('!restart'):
+            await self.restart(message)
+
+        elif content.startswith('!log'):
+            await self.execute_command("cat /tmp/duck.log", message.channel)
+
+        elif content.startswith('!rmlog'):
+            await self.execute_command("rm /tmp/duck.log", message.channel)
+            await self.execute_command("touch /tmp/duck.log", message.channel)
+
+        elif content.startswith('!status'):
+            await message.channel.send('I am alive.')
+
+        elif content.startswith('!help'):
+            await self.display_help(message)
+
+        elif content.startswith('!'):
+            await self.execute_message(message)
+
+    async def on_message(self, message: discord.Message):
         """
         This function is called whenever the bot sees a message in a channel
         If the message is in a listen channel
@@ -180,9 +282,20 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
+        if message.channel.name == 'control-duck':
+            await self.control_on_message(message)
+            return
+
         # if the message is in a listen channel, create a thread
+        # ignore prompt injections for gpt4 channel
         if message.channel.name in self.prompts:
-            prefix = self.prompts[message.channel.name]
+            if not message.channel.name == "gpt4":
+                prefix = self.prompts["duck-pond"]
+                if message.channel.category.name.lower() in self.prompts:
+                    prefix += self.prompts[message.channel.category.name.lower()]
+                prefix += self.prompts[message.channel.name]
+            else:
+                prefix = self.prompts["gpt4"]
             await self.create_conversation(prefix, message)
 
         # if the message is in an active thread, continue the conversation
@@ -193,6 +306,7 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
+
 
     async def create_conversation(self, prefix, message):
         """

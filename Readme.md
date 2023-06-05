@@ -20,7 +20,7 @@ The file should contain the prompt to use for each thread in that channel.
   - Get the API key and provide it as the environment variable `OPENAI_API_KEY` to the bot
 - Create a new discord application
   - https://discord.com/developers/applications
-  - Get the client secret and provide it as the environment variable `DISCORD_TOKEN` to the bot
+  - Get the token under the bot tab and provide it as the environment variable `DISCORD_TOKEN` to the bot
   - Under "Bot"
     - Select "Message content intent"
   - Under "OAuth2"
