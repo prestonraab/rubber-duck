@@ -248,10 +248,12 @@ class MyClient(discord.Client):
 
         elif content.startswith('!log'):
             await self.execute_command("cat /tmp/duck.log", message.channel)
+            await message.channel.send('Done.')
 
         elif content.startswith('!rmlog'):
             await self.execute_command("rm /tmp/duck.log", message.channel)
             await self.execute_command("touch /tmp/duck.log", message.channel)
+            await message.channel.send('Done.')
 
         elif content.startswith('!status'):
             await message.channel.send('I am alive.')
