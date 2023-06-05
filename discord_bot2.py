@@ -263,9 +263,6 @@ class MyClient(discord.Client):
         elif content.startswith('!help'):
             await self.display_help(message)
 
-        elif content.startswith('!'):
-            await self.execute_message(message)
-
     async def on_message(self, message: discord.Message):
         """
         This function is called whenever the bot sees a message in a channel
