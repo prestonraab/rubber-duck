@@ -178,22 +178,12 @@ class MyClient(discord.Client):
         """
         await message.channel.send(f'Restart requested.')
         os.chdir(Path(__file__).parent)
-        if os.system(f"git fetch") != 0:
-            await message.channel.send(f'Error fetching from git.')
-            return
-        if os.system(f"git reset --hard") != 0:
-            await message.channel.send(f'Error hard resetting git.')
-            return
-        if os.system("git clean -f") != 0:
-            await message.channel.send('Error cleaning git.')
-            return
-        if os.system("git pull --rebase=false") != 0:
-            await message.channel.send('Error merging.')
-            return
-        if os.system("poetry install") != 0:
-            await message.channel.send('Error installing poetry.')
-            return
-        await message.channel.send('Restarting.')
+        await self.execute_command('git fetch', message.channel)
+        await self.execute_command('git reset --hard', message.channel)
+        await self.execute_command('git clean -f', message.channel)
+        await self.execute_command('git pull --rebase=false', message.channel)
+        await self.execute_command('poetry install', message.channel)
+        await message.channel.send(f'Restarting.')
         subprocess.Popen(["bash", "restart.sh"])
         return
 
