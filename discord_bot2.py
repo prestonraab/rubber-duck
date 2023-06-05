@@ -181,11 +181,14 @@ class MyClient(discord.Client):
         if os.system(f"git fetch") != 0:
             await message.channel.send(f'Error fetching from git.')
             return
+        if os.system(f"git reset --hard") != 0:
+            await message.channel.send(f'Error hard resetting git.')
+            return
         if os.system("git clean -f") != 0:
             await message.channel.send('Error cleaning git.')
             return
-        if os.system("git pull") != 0:
-            await message.channel.send('Error pulling from git.')
+        if os.system("git merge --rebase=false") != 0:
+            await message.channel.send('Error merging.')
             return
         os.system("poetry install")
         await message.channel.send('Restarting.')
@@ -262,6 +265,8 @@ class MyClient(discord.Client):
 
         elif content.startswith('!help'):
             await self.display_help(message)
+        elif content.startswith('!'):
+            await message.channel.send('Unknown command. Try !help')
 
     async def on_message(self, message: discord.Message):
         """
