@@ -212,10 +212,10 @@ class MyClient(discord.Client):
         # Get output of command and send to channel
         errors = process.stderr.decode('utf-8')
         if errors:
-            await channel.send(f'Errors: ```{errors}```')
+            await self.say_in_channel(channel, f'Errors: ```bash\n{errors}```')
         output = str(process.stdout.decode('utf-8'))
         if output:
-            await self.say_in_channel(channel, output)
+            await self.say_in_channel(channel, f'Output: ```bash\n{output}```')
         if len(output) > 2000:
             await channel.send(f'Done.')
         return
