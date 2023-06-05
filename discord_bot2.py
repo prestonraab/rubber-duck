@@ -206,15 +206,15 @@ class MyClient(discord.Client):
         Execute a command in the shell and return the output to the channel
         """
         # Run command using shell and pipe output to channel
-        await self.say_in_channel(channel, text, "```bat\n$ ", "```")
+        await self.say_in_channel(channel, text, "```ps\n$ ", "```")
         process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Get output of command and send to channel
         errors = process.stderr.decode('utf-8')
         if errors:
-            await self.say_in_channel(channel, errors, prefix=f'Errors: ```bat\n', suffix='```')
+            await self.say_in_channel(channel, errors, prefix=f'Errors: ```ps\n', suffix='```')
         output = str(process.stdout.decode('utf-8'))
         if output:
-            await self.say_in_channel(channel, output, prefix=f'Output: ```bat\n', suffix='```')
+            await self.say_in_channel(channel, output, prefix=f'Output: ```ps\n', suffix='```')
         if len(output) > 2000:
             await channel.send(f'Done.')
         return
