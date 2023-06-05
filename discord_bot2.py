@@ -187,7 +187,7 @@ class MyClient(discord.Client):
         subprocess.Popen(["bash", "restart.sh"])
         return
 
-    async def say_in_channel(self, channel, output):
+    async def say_in_channel(self, channel, text, prefix="", suffix=""):
         """
         Say something in a channel
         :param channel: The channel to say something in
@@ -195,11 +195,11 @@ class MyClient(discord.Client):
         """
         # Async methods like for loops better than while loops
         # Split output into 1800 character chunks
-        for i in range(len(output) // 1800):
-            await channel.send(f'Output: ```{output[:1800]}```')
-            output = output[1800:]
+        for i in range(len(text) // 1800):
+            await channel.send(f'{prefix}{text[:1800]}{suffix}')
+            text = text[1800:]
 
-        await channel.send(f'Output: ```{output}```')
+        await channel.send(f'{prefix}{text}{suffix}')
 
     async def execute_command(self, text, channel):
         """
