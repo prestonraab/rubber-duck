@@ -190,9 +190,6 @@ class MyClient(discord.Client):
         if os.system("git pull --rebase=false") != 0:
             await message.channel.send('Error merging.')
             return
-        if os.system("poetry update") != 0:
-            await message.channel.send('Error updating poetry.')
-            return
         if os.system("poetry install") != 0:
             await message.channel.send('Error installing poetry.')
             return
