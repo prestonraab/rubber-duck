@@ -236,7 +236,7 @@ class MyClient(discord.Client):
 
     async def display_help(self, message):
         await message.channel.send(
-            "!restart - restart the bot"
+            "!restart - restart the bot\n"
             "!log - print the log file\n"
             "!rmlog - remove the log file\n"
             "!status - print a status message\n"
