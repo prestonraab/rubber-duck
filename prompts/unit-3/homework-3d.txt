@@ -1,0 +1,159 @@
+Here are the instructions for the given homework assignment:
+
+# Homework 3d -- List Patterns
+
+## 1. Simplify
+
+You are teaching your nephew to read, and you want a list of words that are
+short enough for him to pronounce. Write a program that does the following:
+
+- A person enters a list of words, ending with a blank line.
+- A person enters a maximum length.
+- Filter the list of words so that it only contains words whose length is <= to
+  the maximum length.
+- Print out the list of words that are short, using "- " before each word.
+
+The input and output of the program should look like this:
+
+```
+Enter a word: horse
+Enter a word: cat
+Enter a word: dog
+Enter a word: question
+Enter a word: hello
+Enter a word: fantastic
+Enter a word: great
+Enter a word: slow
+Enter a word: fast
+Enter a word: walking
+Enter a word:
+Enter a length: 5
+There are 7 short words:
+- horse
+- cat
+- dog
+- hello
+- great
+- slow
+- fast
+```
+
+There is sample code in `simplify.py`:
+
+```python
+def main():
+    # Write code here
+    pass
+
+
+if __name__ == '__main__':
+    main()
+```
+
+Start by decomposing the problem into a set of functions that you can call in
+`main()`:
+
+| Function | Parameters | Description | Pattern |
+| -------- | ---------- | ----------- | ------- |
+| 1. <br/> |            |             |         |
+| 2. <br/> |            |             |         |
+| 3. <br/> |            |             |         |
+| 4. <br/> |            |             |         |
+| 5. <br/> |            |             |         |
+| 6. <br/> |            |             |         |
+
+The number 6 is not intended to represent the number of functions you must have
+-- you may have fewer! List the pattern you might use for this function (input,
+input loop, map, filter, select, accumulate), if one of them applies. Once you
+have your solution designed, implement these functions. If you need help from
+the TAs, bring this table with you.
+
+## 2. Counting Grouse
+
+Sage grouse are a ground-dwelling bird found in Utah that are
+[considered a sensitive species, meaning on the path toward extinction](https://www.endangered.org/animals/greater-sage-grouse/#:~:text=Both%20the%20Bureau%20of%20Land,99%20percent%20from%20historic%20levels.).
+
+![sage grouse](/images/homework3d/sage-grouse.jpeg)
+
+Write a program that can be used to count the number of grouse observed in a
+particular area and report some data on the grouse. The program should:
+
+- Allow an observer to enter a list of the number of grouse observed in each
+  area, ended by a blank line.
+- Print some information about the grouse counts, including:
+  - the total number of grouse observed,
+  - the smallest number of grouse observed in an area, and
+  - the largest number of grouse observed in an area.
+- Allow the observer to enter an estimation factor, since they may not have
+  counted all the grouse (e.g. 2, or 3 to represent there may have been 2 or 3
+  times as many grouse in reality).
+- Multiply all the counts by the estimate factor.
+- Print out the estimated grouse populations using the corrected counts.
+
+The input and output of the code should look like this:
+
+```
+Enter an observation count: 50
+Enter an observation count: 75
+Enter an observation count: 100
+Enter an observation count: 25
+Enter an observation count: 0
+Enter an observation count: 30
+Enter an observation count:
+There are 280 total grouse.
+The smallest count is: 0
+The largest count is: 100
+Enter factor: 2
+The estimated grouse populations are:
+- 100
+- 150
+- 200
+- 50
+- 0
+- 60
+```
+
+You can find starter code in `counting_grouse.py`:
+
+```python
+def main():
+    # Write code here
+    pass
+
+
+if __name__ == '__main__':
+    main()
+
+```
+
+Start by decomposing the problem into a set of functions that you can call in
+`main()`:
+
+| Function | Parameters | Description | Pattern |
+| -------- | ---------- | ----------- | ------- |
+| 1. <br/> |            |             |         |
+| 2. <br/> |            |             |         |
+| 3. <br/> |            |             |         |
+| 4. <br/> |            |             |         |
+| 5. <br/> |            |             |         |
+| 6. <br/> |            |             |         |
+
+List the pattern you might use for this function (input, input loop, map,
+filter, select, accumulate), if one of them applies. Once you have your solution
+designed, implement these functions. If you need help from the TAs, bring this
+table with you.
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity        | Points |
+| --------------- | ------ |
+| Simplify        | 8      |
+| Counting Grouse | 12     |
+
+Manual grading will focus on decomposition, fluency, and appropriate use of lists.

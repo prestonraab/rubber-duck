@@ -1,0 +1,143 @@
+Here are the instructions for the given homework assignment:
+
+# Homework 3c -- Lists
+
+## 1. Big and small words
+
+This program will print out words that are "smaller" and "bigger" than a
+boundary word, using alphabetical order. Write a program that:
+
+- Gets a list of words, ending with a blank line.
+- Gets a boundary word.
+- Prints the total number of words.
+- Prints the words that come alphabetically before the boundary word.
+- Prints the words that come alphabetically after the boundary word.
+
+Here is some sample input and output from the program:
+
+```
+Word: fantastic
+Word: stupendous
+Word: marvelous
+Word: wonderful
+Word: beautiful
+Word: amazing
+Word: great
+Word:
+Boundary: honorable
+You have 7 words
+These are small:
+fantastic
+beautiful
+amazing
+great
+These are big:
+stupendous
+marvelous
+wonderful
+```
+
+You can find starter code in `words.py`.
+
+## 2. Custom bullets
+
+Write a program that prints a list with a variety of custom bullets. The program
+should:
+
+- Get a list of words, ending with a blank line.
+- Get a list of bullets, ending with a blank line.
+- Print the list multiple times, once with each type of bullet.
+
+Here is some sample input and output for the program:
+
+```
+Item: Soul
+Item: Incredibles
+Item: Brave
+Item: Wall-e
+Item: Finding Nemo
+Item: A Bug's Life
+Item:
+
+Custom Bullet Point: *
+Custom Bullet Point: o
+Custom Bullet Point: -
+Custom Bullet Point:
+
+* Soul
+* Incredibles
+* Brave
+* Wall-e
+* Finding Nemo
+* A Bug's Life
+
+o Soul
+o Incredibles
+o Brave
+o Wall-e
+o Finding Nemo
+o A Bug's Life
+
+- Soul
+- Incredibles
+- Brave
+- Wall-e
+- Finding Nemo
+- A Bug's Life
+```
+
+You can find starter code in `custom_bullets.py`.
+
+## 3. Compare lists
+
+Write a program that compares how many fruits you eat with how many vegetables
+you eat. The program should:
+
+- Get a list of fruits, ending with a blank line.
+- Get a list of vegetables, ending with a blank line.
+- If the list of fruits is longer:
+  - Prints the list of fruits
+  - Prints the list of vegetables
+  - Prints "You need more vegetables!"
+- If the list of vegetables is longer:
+  - Prints the list of vegetables
+  - Prints the list of fruits
+  - Prints "You need more fruit!"
+- If the lists are the same length:
+  - Prints the list of fruits
+  - Prints the list of vegetables
+  - What a healthy balanced diet! (the lists are equal lengths)
+
+Here is some sample input and output for the program:
+
+```
+Enter a Fruit: apple
+Enter a Fruit:
+Enter a Vegetable: carrot
+Enter a Vegetable: squash
+Enter a Vegetable:
+Vegetables:
+ - carrot
+ - squash
+Fruits:
+ - apple
+You need more fruit!
+```
+
+You can find starter code in `compare_lists.py`.
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity            | Points |
+| ------------------- | ------ |
+| Big and small words | 6      |
+| Custom bullets      | 7      |
+| Compare lists       | 7      |
+
+Manual grading will focus on decomposition, fluency, and appropriate use of lists.
