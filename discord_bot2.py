@@ -214,8 +214,10 @@ class MyClient(discord.Client):
         if errors:
             await channel.send(f'Errors: ```{errors}```')
         output = str(process.stdout.decode('utf-8'))
-        await self.say_in_channel(channel, output)
-        await channel.send(f'Done.')
+        if output:
+            await self.say_in_channel(channel, output)
+        if len(output) > 2000:
+            await channel.send(f'Done.')
         return
 
     async def execute_message(self, message):
