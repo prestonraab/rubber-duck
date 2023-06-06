@@ -1,0 +1,158 @@
+Here are the instructions for the given homework assignment:
+
+
+# Homework 4e -- Split and join
+
+For some of these problems you will be using the file processing pattern. See
+the [guide on reading and writing files](/guide/unit4/reading-and-writing-files)
+for help.
+
+You will also be using split and join to modify words in a line, using concepts
+taught in the [guide on split and join](/guide/unit4/split-and-join). The
+previous lab was designed to get you ready for this.
+
+## 1. Sum numbers
+
+Write a program named `sum_nums.py` that takes the following arguments, in this
+order:
+
+- an input file
+
+The input file will have a set of lines, each one containing various integers.
+The program should sum all of these numbers. 
+
+We have given you an input file called `sum_nums.input.txt` that contains:
+
+```
+10 20 5
+1 7 8
+230
+```
+
+When you run your program like this:
+
+```
+python sum_nums.py sum_nums.input.txt
+```
+
+then it should print:
+
+```
+The total is 281
+```
+
+## 2. Replace a word
+
+Write a program named `replace_word.py` that takes the following arguments, in
+this order:
+
+- an input file
+- an output file
+- an old word
+- a new word
+
+The program takes the input file and replaces each instance of the old word with
+the new word. **This should replace words only, and should not do string
+replacement.** Write the new contents of the file to the output file.
+
+We have given you an input file called `replace_word.input.txt` that contains:
+
+```
+Sally sells seashells by the seashore.
+She sells seashells on the seashell shore.
+The seashells she sells are seashore shells,
+Of that I’m sure.
+She sells seashells by the seashore.
+She hopes she will sell all her seashells soon.
+```
+
+When you run your `replace_word.py` program like this:
+
+```
+python replace_word.py replace_word.input.txt output.txt sells sold
+```
+
+Then the file called `output.txt` should have the same contents as the input
+file, but the word "sells" replaced with the word "sold".
+
+## 3. Older customers
+
+Write a program named `older_customers.py` that takes the following arguments,
+in this order:
+
+- an input file
+- an output file
+- an age (integer)
+
+The input file is a CSV file. This means it will have a set of lines, and each
+line has fields that are separated by a comma `,`. The fields are:
+
+- Customer ID
+- Gender (Male/Female)
+- Age (integer)
+- Annual Income in Dollars (integer)
+- Spending Score (from 1 to 100)
+- Profession
+- Work Experience (integer)
+- Family Size (integer)
+
+You need to write the output file so that it has only lines of individuals older
+than the specified age. Be sure to also keep the first line. You can identify
+the first line by checking if the first word, after you split the line, is equal
+to "CustomerID".
+
+You can run your program like this:
+
+```
+% python older_customers.py customers_small.csv older.csv 20
+```
+
+This should keep only two customers in the new file:
+
+```
+CustomerID,Gender,Age,Annual Income ($),Spending Score (1-100),Profession,Work Experience,Family Size
+2,Male,21,35000,81,Engineer,3,3
+4,Female,23,59000,77,Lawyer,0,2
+```
+
+## 4. Average income
+
+Write a program named `average_income.py` that takes the following arguments, in
+this order:
+
+- an input file
+- a profession
+
+The input file is the same CSV file as above. The program should find all of the
+lines where the person has the same profession as given and then calculate the
+average income for those people.
+
+You can run your program like this:
+
+```
+% python average_income.py customers_small.csv Engineer
+```
+
+This should keep average the income for just the customers who are Engineers and
+print:
+
+```
+The average income of Engineer is 60500
+```
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity        | Points |
+| --------------- | ------ |
+| Sum numbers     | 2      |
+| Replace word    | 4      |
+| Older customers | 7      |
+| Average income  | 7      |
+
+Manual grading will focus on decomposition, fluency, and use of `split` and `join`.

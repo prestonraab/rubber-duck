@@ -1,0 +1,170 @@
+Here are the instructions for the given homework assignment:
+
+
+# Homework 5d -- Grouping
+
+## 1. Blue score
+
+Write a program in `blue_score.py` that reads phrases from input and then groups
+those phrases by their "blue score". You can calculate a "blue score" for a
+phrase by counting how many times it contains one of these words: `'byu'`,
+`'cougar'`, `'cougars'`, `'blue'`. Ignore case and punctuation. For example, here are some
+phrases and their scores:
+
+| Word                              | Blue Score |
+| --------------------------------- | ---------- |
+| I saw a blue bird at BYU.         | 2          |
+| The blue cougar was feeling blue. | 3          |
+| BYU is great. Go cougars!         | 2          |
+| What does the cougar say?         | 1          |
+
+Write your program so the output matches what is shown below:
+
+```
+Phrase: I saw a blue bird at BYU.
+Phrase: The blue cougar was feeling blue.
+Phrase: BYU is great. Go cougars!
+Phrase: What does the cougar say?
+Phrase:
+2:
+I saw a blue bird at BYU.
+BYU is great. Go cougars!
+
+3:
+The blue cougar was feeling blue.
+
+1:
+What does the cougar say?
+
+```
+
+Note that there is an extra blank line after each group of phrases.
+
+## 2. Word groups
+
+Write a program in `word_groups.py` that takes
+
+- a file name
+
+The program should read all of the words in the file and then group them by
+their length and their first letter, as a tuple `(length, letter)`.
+
+For example, the file `some_words.txt` contains:
+
+```
+Apple, ash, aspen.
+Pears and plums, pretty please?
+Where what whom!
+```
+
+If you run the program, it should produce this:
+
+```
+% python word_groups.py words.txt
+(5, 'a'): ['apple', 'aspen']
+(3, 'a'): ['ash', 'and']
+(5, 'p'): ['pears', 'plums']
+(6, 'p'): ['pretty', 'please']
+(5, 'w'): ['where']
+(4, 'w'): ['what', 'whom']
+```
+
+**Tips**
+
+To get a list of all the words in a file, given the filename, use this function:
+
+```python
+def readwords(filename):
+    """
+    Read a file given by the filename and
+    return a list of all of the words. The words
+    are separated based on whitespace.
+    Note, punctuation remains with the words!
+    """
+    with open(filename) as file:
+        return file.read().split()
+```
+
+To convert a word to lowercase and remove punctuation, recall that we can do
+this for a word:
+
+```python
+word = word.lower().strip(',.!?')
+```
+
+## 3. Group CSV
+
+In this problem, you are going to write code that can group columns from a CSV
+file. Write your code in `group_csv.py`. This program takes three arguments:
+
+- an input file name
+- a column to group by (column A)
+- a column of values (column B)
+
+The program should group all of the values in column B based on the keys in
+column A. For example, we have given you a CSV file called `grades.csv`:
+
+```
+Emma,A,A
+Harold,B,A-
+McKayla,A,B-
+Jose,A-,B+
+Jenna,B+,B
+Joshua,B,A+
+Sarah,B,B
+```
+
+If you run the program with:
+
+```
+python group_csv.py grades.csv 1 0
+```
+
+then the program will group all of the students by their grades on the 1st
+assignment (i.e. the 2nd column; remember we count columns starting at zero!) 
+
+This should print:
+
+```
+A: ['Emma', 'McKayla']
+B: ['Harold', 'Joshua', 'Sarah']
+A-: ['Jose']
+B+: ['Jenna']
+```
+
+You can also run the program to group the students based on their grades on the
+2nd assignment:
+
+```
+python group_csv.py grades.csv 2 0
+```
+
+This should print:
+
+```
+A: ['Emma']
+A-: ['Harold']
+B-: ['McKayla']
+B+: ['Jose']
+B: ['Jenna', 'Sarah']
+A+: ['Joshua']
+```
+
+This is very similar to a problem from the lab, except we are telling you the
+column for the key _and_ the column for the value.
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity    | Points |
+| ----------- | ------ |
+| Blue score  | 5      |
+| Word groups | 7      |
+| Group CSV   | 8      |
+
+Manual grading will focus on decomposition, fluency, and use of dictionaries. 

@@ -1,0 +1,192 @@
+Here are the instructions for the given homework assignment:
+
+
+# Project 4 - Wordle
+
+## Instructions
+
+The beloved word-guessing game _WORDLE_ is back! And _you_ get to implement it.
+
+You will write all of your code in a python script named `wordle.py`. We have
+given you an empty file named `wordle.py` to get you started.
+
+### Command line arguments
+
+Your program should take two command line arguments:
+
+- _word bank_ : the file name of the word-bank file
+- _guesses allowed_: the maximum number of guesses allowed
+
+For example:
+
+```
+python wordle.py wordle-answers-alphabetical.txt 6
+```
+
+This tells the program to use `wordle-answers-alphabetical.txt` as the word bank,
+and `6` as the maximum number of guesses allowed.
+
+The word bank file contains a list of 5-letter words, each word on it's own
+line. We have provided you with a file called `wordle-answers-alphabetical.txt`
+that you can use to play the game.
+
+The player can guess up to the maximum number of guesses. For example, classic
+_WORDLE_ gives you 6 guesses.
+
+### Playing the game
+
+- The program picks a random word from the word bank that the player will guess
+- For each attempt:
+  - The program prompts the player with the text: `"Guess # {attempt}: \n"`
+    where `{attempt}` is the round the player is on.
+  - The player guesses a word
+  - The program shows the player the result of their guess, using the following
+    characters:
+    - A `!` indicates that the letter matches the answer exactly
+    - A `?` indicates that the letter is in the answer, but it is in the wrong
+      position.
+    - A `*` indicates that the letter is not anywhere in the answer
+    - See the examples below
+  - If the guess is correct or the number of allowed attempts has been exceeded,
+    the program concludes
+    - Otherwise the user is prompted for a new guess
+  - At the end of the game, if the last guess is correct, the program displays
+    `Way to go!`, otherwise `Maybe next time. The answer is {answer}.`
+    - where `{answer}` is the secret word chosen from the word bank.
+
+### Important notes on the rules
+
+The logic for scoring a guess differs slightly from the original _WORDLE_ game.
+The primary difference is in how duplicate letters are handled.
+
+For this project, use the logic described above. Note that if a guess contains
+two occurrences of the same letter, and one of them is in the right place, then
+the second occurrence will still show `?`. For example:
+
+Secret: `topaz`
+Guess: `tooth`
+Result: `!!??*`
+
+The first `t` and `o` match the secret word exactly, so they are replaced with
+`!`. the second `o` and `t` are not exact matches, but because `t` and `o` are
+present in the secret word somewhere else (the locations matched by the first
+`t` and `o`), they are replaced with `?`. Finally, the `h` does not match the
+secret word at all, so it is replaced with `*`.
+
+### Examples
+
+Here is an example showing the program being run from the command line.
+
+```
+$ python wordle.py wordle-answers-alphabetical.txt 6
+Guess # 1:
+alien
+*****
+Guess # 2:
+tours
+*???*
+Guess # 3:
+proud
+*??!*
+Guess # 4:
+forum
+*??!*
+Guess # 5:
+occur
+!!!!!
+Way to go!
+```
+
+The secret word was `occur`. `alien` matches none of the letters anywhere, so it
+was completely replaced with `*****`. For `tours`, the `o`, `u`, and `r` match,
+but not in those positions, so they are replaced with `?`; the `t`, and `s`
+don't match at all, so they are replaced with `*`, resulting in `*???*`. Etc.
+
+Another example:
+
+```
+$ python wordle.py wordle-answers-alphabetical.txt 6
+Guess # 1:
+tooth
+?**?*
+Guess # 2:
+train
+?*?**
+Guess # 3:
+attic
+???*?
+Guess # 4:
+catch
+?!??*
+Guess # 5:
+pacts
+*!!?*
+Guess # 6:
+match
+*!??*
+Maybe next time. The answer is facet.
+```
+
+And another:
+
+```
+$ python wordle.py wordle-answers-alphabetical.txt 2
+Guess # 1:
+maybe
+**??*
+Guess # 2:
+beany
+!***!
+Maybe next time. The answer is buggy.
+```
+
+In this example, the player passed `2` on the command line, indicating that only
+2 guesses should be allowed. After those guesses, the game is over.
+
+## Tests
+
+The `test_files` folder contains a few word bank files that contain a single
+word. These are very useful for testing and debugging your program.
+
+`test_wordle.py` contains 10 tests that try different functionality in your
+code.
+
+- `test_wordle_one_try_one_guess_win`
+- `test_wordle_five_tries_one_guess_win`
+- `test_wordle_two_tries_two_guesses_win`
+- `test_wordle_three_tries_three_guesses_loss`
+- `test_wordle_correct_letters_but_wrong_spots`
+- `test_wordle_duplicate_letters_one_correct_one_close`
+- `test_wordle_correct_word_has_doubles`
+- `test_wordle_numbers_and_symbols`
+- `test_wordle_six_guesses_loss`
+- `test_wordle_real_game`
+
+## Grading
+
+_10 points_ for each test listed above.
+
+## Above and Beyond
+
+Those looking for an extra challenge can try the following. Copy `wordle.py` to
+another file (e.g. `real_wordle.py`). Then implement the scoring rules from the
+original _WORDLE_.
+
+Specifically, the rules are the same as above, except that when doubles are
+guessed, if the secret word has only one occurrence of the letter, then only one
+of the guessed letters gets scored and the other gets `*`.
+
+If the secret has a double occurrence, then both of the occurrences in the guess
+get scored.
+
+Priority is given to exact matches, and then from left to right.
+
+**Example**
+
+Secret: `store`
+Guess: `tooth`
+Result: `?*!**`
+
+Secret: `kitty`
+Guess: `tooth`
+Result: `?**!*`
