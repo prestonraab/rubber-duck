@@ -222,6 +222,7 @@ class MyClient(discord.Client):
     async def execute_message(self, message):
         """
         Execute a command in the shell and return the output to the channel
+        Removes the starting 
         :param message: discord.Message object, used to get the command
         """
         await self.execute_command(message.content[1:], message.channel)
