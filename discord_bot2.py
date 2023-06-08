@@ -93,8 +93,6 @@ async def execute_command(text, channel):
     output = process.stdout.decode('utf-8')
     if output:
         await send_in_channel(channel, f'```{output}```')
-    if len(output) > 2000:
-        await channel.send(f'Done.')
     return
 
 
@@ -126,12 +124,10 @@ async def control_on_message(message):
 
     elif content.startswith('!log'):
         await message.channel.send(file=discord.File('/tmp/duck.log'))
-        await message.channel.send('Done.')
 
     elif content.startswith('!rmlog'):
         await execute_command("rm /tmp/duck.log", message.channel)
         await execute_command("touch /tmp/duck.log", message.channel)
-        await message.channel.send('Done.')
 
     elif content.startswith('!status'):
         await message.channel.send('I am alive.')
