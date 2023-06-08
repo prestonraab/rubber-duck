@@ -78,37 +78,21 @@ async def display_help(message):
     )
 
 
-async def say_in_channel(channel, text, prefix="", suffix=""):
-    """
-    Say something in a channel
-    :param channel: The channel to say something in
-    :param output: The message to say, long messages will be split into multiple messages
-    """
-    # Async methods like for loops better than while loops
-    # Split output into 1800 character chunks
-    for i in range(len(text) // 1800):
-        await channel.send(f'{prefix}{text[:1800]}{suffix}')
-        text = text[1800:]
-
-    await channel.send(f'{prefix}{text}{suffix}')
-
-
 async def execute_command(text, channel):
     """
     Execute a command in the shell and return the output to the channel
     """
     # Run command using shell and pipe output to channel
-    await say_in_channel(channel, text, "```ps\n$ ", "```")
-    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    work_dir = Path(__file__).parent
+    await send_in_channel(channel, f"```ps\n$ {text}```")
+    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
     # Get output of command and send to channel
     errors = process.stderr.decode('utf-8')
     if errors:
-        await say_in_channel(channel, errors, prefix=f'Errors: ```', suffix='```')
-    output = str(process.stdout.decode('utf-8'))
+        await send_in_channel(channel, f'Errors: ```{errors}```')
+    output = process.stdout.decode('utf-8')
     if output:
-        await say_in_channel(channel, output, prefix=f'```', suffix='```')
-    if len(output) > 2000:
-        await channel.send(f'Done.')
+        await send_in_channel(channel, f'```{output}```')
     return
 
 
@@ -118,7 +102,6 @@ async def restart(message):
     :param message: The message that triggered the restart
     """
     await message.channel.send(f'Restart requested.')
-    os.chdir(Path(__file__).parent)
     await execute_command('git fetch', message.channel)
     await execute_command('git reset --hard', message.channel)
     await execute_command('git clean -f', message.channel)
@@ -140,13 +123,11 @@ async def control_on_message(message):
         await restart(message)
 
     elif content.startswith('!log'):
-        await execute_command("cat /tmp/duck.log", message.channel)
-        await message.channel.send('Done.')
+        await message.channel.send(file=discord.File('/tmp/duck.log'))
 
     elif content.startswith('!rmlog'):
         await execute_command("rm /tmp/duck.log", message.channel)
         await execute_command("touch /tmp/duck.log", message.channel)
-        await message.channel.send('Done.')
 
     elif content.startswith('!status'):
         await message.channel.send('I am alive.')
@@ -180,23 +161,75 @@ async def query(conversation: Conversation, message_text: str):
     return response
 
 
+def parse_blocks(text: str, limit=2000):
+    tick = '`'
+    block = ""
+    current_fence = ""
+    for line in text.splitlines():
+        if len(block) + len(line) > limit - 3:
+            if block:
+                if current_fence:
+                    block += '```'
+                yield block
+                block = current_fence
+
+        block += ('\n' + line) if block else line
+
+        if line.strip().startswith(tick * 3):
+            if current_fence:
+                current_fence = ""
+            else:
+                current_fence = line
+
+    if block:
+        yield block
+
+
+async def send(thread: discord.Thread, text: str):
+    for block in parse_blocks(text):
+        await thread.send(block)
+
+
+async def send_in_channel(channel: discord.TextChannel, text: str):
+    for block in parse_blocks(text):
+        await channel.send(block)
+
+
+async def continue_conversation(
+        conversation: Conversation, message_text: str):
+    """
+    Use the OPNENAI API to continue the conversation
+    """
+    thread = conversation.thread
+
+    # while the bot is waiting on a response from the model
+    # set its status as typing for user-friendliness
+    async with thread.typing():
+        response = await query(conversation, message_text)
+
+        if not response:
+            response = 'RubberDuck encountered an error.'
+
+        # send the model's response to the Discord channel
+        await send(thread, response)
+
+
 class MyClient(discord.Client):
-    def __init__(self, prompt_dir: Path, channels):
+    def __init__(self, prompt_dir: Path, conversation_dir: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
         super().__init__(intents=intents)
 
-        self.channels = channels
-        self.workflow_manager = None
-
         self._load_prompts(prompt_dir)
+        self._load_control_channels()
+        self.conversation_dir = conversation_dir
         self.conversations = {}
         self.guild_dict = {}  # Loaded in on_ready
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
-        for file in prompt_dir.glob("**/*"):
+        for file in prompt_dir.iterdir():
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
 
@@ -261,98 +294,89 @@ class MyClient(discord.Client):
             if channel.name == 'control-duck':
                 await channel.send('Duck online')
 
-
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
+        """
+        This function is called whenever the bot sees a message in a channel
+        If the message is in a listen channel
+          the bot creates a thread in response to that message
+        If the message is in a conversation thread,
+          the bot continues the conversation in that thread
+        The bot ignores all other messages.
+        """
         # ignore messages from the bot itself
         if message.author == self.user:
             return
 
-        if message.channel.name == 'control-duck':
+        if message.content.startswith('//'):
+            return
+
+        if message.channel.id in self.control_channels:
             await control_on_message(message)
+            return
+        elif message.channel.name == 'control-duck':
+            await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
             return
 
         # if the message is in a listen channel, create a thread
-        if message.channel.name in self.channels:
-            await self._create_conversation(message)
+        if message.channel.name in self.prompts:
+            await self.create_conversation(self.prompts[message.channel.name], message)
 
         # if the message is in an active thread, continue the conversation
-        elif self.workflow_manager.has_workflow(str(message.channel.id)):
-            await self._continue_conversation(str(message.channel.id), message.content)
+        elif message.channel.id in self.conversations:
+            await continue_conversation(
+                self.conversations[message.channel.id], message.content)
 
         # otherwise, ignore the message
         else:
             return
 
-    async def _create_conversation(self, message: discord.Message):
-        # Create a private thread in the message channel
-        thread = await message.channel.create_thread(
+    async def create_conversation(self, prefix, message):
+        """
+        Create a thread in response to this message.
+        """
+        # get the channel from the message
+        channel = message.channel
+
+        # create a public thread in response to the message
+        thread = await channel.create_thread(
             name=message.content[:20],
             type=ChannelType.public_thread,
             auto_archive_duration=60
         )
-        # start new register user workflow
-        await self.workflow_manager.start_async_workflow(str(thread.id), RegisterUserFlow(thread),
-                                                         str(message.author.mention))
+        welcome = f'{message.author.mention} What can I do for you?'
+
+        conversation = Conversation(
+            guild_id=thread.guild.id,
+            thread=thread,
+            thread_id=thread.id,
+            thread_name=thread.name,
+            started_by=message.author.name,
+            first_message=datetime.utcnow(),
+            last_message=datetime.utcnow(),
+            messages=[
+                dict(role='system', content=prefix or message.content),
+                dict(role='assistant', content=welcome)
+            ]
+        )
+        self.conversations[thread.id] = conversation
+        async with thread.typing():
+            await thread.send(welcome)
+
+    def _load_control_channels(self):
+        with open('config.json') as file:
+            config = json.load(file)
+        self.control_channels = config['control_channels']
 
 
 
-    async def _continue_conversation(self, thread_id, text: str):
-        # Get the conversation
-        result = await self.workflow_manager.signal_async_workflow(thread_id, INPUT_EVENT_NAME, text)
-        if result is not None:
-            logging.debug(f'Conversation {thread_id} complete.')
-
-    def set_workflow_manager(self, workflow_manager: WorkflowManager):
-        self.workflow_manager = workflow_manager
-
-
-    def parse_blocks(self, text: str, limit=2000):
-        tick = '`'
-        block = ""
-        current_fence = ""
-        for line in text.splitlines():
-            if len(block) + len(line) > limit - 3:
-                if block:
-                    if current_fence:
-                        block += '```'
-                    yield block
-                    block = current_fence
-
-            block += ('\n' + line) if block else line
-
-            if line.strip().startswith(tick * 3):
-                if current_fence:
-                    current_fence = ""
-                else:
-                    current_fence = line
-
-        if block:
-            yield block
-
-    async def send(self, thread: discord.Thread, text: str):
-        for block in self.parse_blocks(text):
-            await thread.send(block)
-
-def main(prompts: Path):
-    # create client
-    client = MyClient(prompts, ['register-user'])
-    # set path for saved state and init workflow manager
-    saved_state = Path('saved-state')
-    saved_state.mkdir(exist_ok=True, parents=True)
-    workflow_manager = WorkflowManager(
-        JsonMetadataSerializer(saved_state),
-        JsonEventSerializer(saved_state),
-        {'RegisterUserFlow': DiscordWorkflowSerializer(RegisterUserFlow, client, saved_state)}
-    )
-    # give the workflow manager to the client
-    client.set_workflow_manager(workflow_manager)
-    # run the client
-    with client:
-        client.run(os.getenv('DISCORD_TOKEN'))
+def main(prompts: Path, conversations: Path):
+    with MyClient(prompts, conversations) as client:
+        client.run(os.environ['DISCORD_TOKEN'])
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prompts', type=Path, default='prompts')
+    parser.add_argument('--conversations', type=Path, default='conversations')
     args = parser.parse_args()
-    main(args.prompts)
+    main(args.prompts, args.conversations)
