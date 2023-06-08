@@ -296,20 +296,15 @@ class MyClient(discord.Client):
         if message.channel.name in self.prompts:
             if not message.channel.name == "gpt4":
                 prefix = self.prompts["duck-pond"]
-
                 if message.content.startswith('!'):
                     assignment = message.content.strip('!')
-
+                    
                     # Bit prompt injection
                     if "1" in assignment or "2" in assignment and assignment in self.prompts:
                         prefix += self.prompts["bit-prompt"] + self.prompts[assignment]
                     elif assignment in self.prompts:
                         prefix += self.prompts[assignment]
 
-                # hierarchical prompts based on category names
-                elif message.channel.category.name.lower() in self.prompts:
-                    prefix += self.prompts[message.channel.category.name.lower()]
-                    prefix += self.prompts[message.channel.name]
             else:
                 prefix = self.prompts["gpt4"]
             await self.create_conversation(prefix, message)
