@@ -78,35 +78,21 @@ async def display_help(message):
     )
 
 
-async def say_in_channel(channel, text, prefix="", suffix=""):
-    """
-    Say something in a channel
-    :param channel: The channel to say something in
-    :param output: The message to say, long messages will be split into multiple messages
-    """
-    # Async methods like for loops better than while loops
-    # Split output into 1800 character chunks
-    for i in range(len(text) // 1800):
-        await channel.send(f'{prefix}{text[:1800]}{suffix}')
-        text = text[1800:]
-
-    await channel.send(f'{prefix}{text}{suffix}')
-
-
 async def execute_command(text, channel):
     """
     Execute a command in the shell and return the output to the channel
     """
     # Run command using shell and pipe output to channel
-    await say_in_channel(channel, text, "```ps\n$ ", "```")
-    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    work_dir = Path(__file__).parent
+    await send_in_channel(channel, f"```ps\n$ {text}```")
+    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
     # Get output of command and send to channel
     errors = process.stderr.decode('utf-8')
     if errors:
-        await say_in_channel(channel, errors, prefix=f'Errors: ```', suffix='```')
+        await send_in_channel(channel, f'Errors: ```{errors}```')
     output = str(process.stdout.decode('utf-8'))
     if output:
-        await say_in_channel(channel, output, prefix=f'```', suffix='```')
+        await send_in_channel(channel, f'```{output}```')
     if len(output) > 2000:
         await channel.send(f'Done.')
     return
@@ -118,7 +104,6 @@ async def restart(message):
     :param message: The message that triggered the restart
     """
     await message.channel.send(f'Restart requested.')
-    os.chdir(Path(__file__).parent)
     await execute_command('git fetch', message.channel)
     await execute_command('git reset --hard', message.channel)
     await execute_command('git clean -f', message.channel)
@@ -180,6 +165,59 @@ async def query(conversation: Conversation, message_text: str):
     return response
 
 
+def parse_blocks(text: str, limit=2000):
+    tick = '`'
+    block = ""
+    current_fence = ""
+    for line in text.splitlines():
+        if len(block) + len(line) > limit - 3:
+            if block:
+                if current_fence:
+                    block += '```'
+                yield block
+                block = current_fence
+
+        block += ('\n' + line) if block else line
+
+        if line.strip().startswith(tick * 3):
+            if current_fence:
+                current_fence = ""
+            else:
+                current_fence = line
+
+    if block:
+        yield block
+
+
+async def send(thread: discord.Thread, text: str):
+    for block in parse_blocks(text):
+        await thread.send(block)
+
+
+async def send_in_channel(channel: discord.TextChannel, text: str):
+    for block in parse_blocks(text):
+        await channel.send(block)
+
+
+async def continue_conversation(
+        conversation: Conversation, message_text: str):
+    """
+    Use the OPNENAI API to continue the conversation
+    """
+    thread = conversation.thread
+
+    # while the bot is waiting on a response from the model
+    # set its status as typing for user-friendliness
+    async with thread.typing():
+        response = await query(conversation, message_text)
+
+        if not response:
+            response = 'RubberDuck encountered an error.'
+
+        # send the model's response to the Discord channel
+        await send(thread, response)
+
+
 class MyClient(discord.Client):
     def __init__(self, prompt_dir: Path, conversation_dir: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
@@ -194,7 +232,7 @@ class MyClient(discord.Client):
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
-        for file in prompt_dir.glob("**/*"):
+        for file in prompt_dir.iterdir():
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
 
@@ -281,15 +319,11 @@ class MyClient(discord.Client):
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
-            prefix = ""
-            if message.channel.category.name.lower() in self.prompts:
-                prefix += self.prompts[message.channel.category.name.lower()]
-            prefix += self.prompts[message.channel.name]
-            await self.create_conversation(prefix, message)
+            await self.create_conversation(self.prompts[message.channel.name], message)
 
         # if the message is in an active thread, continue the conversation
         elif message.channel.id in self.conversations:
-            await self.continue_conversation(
+            await continue_conversation(
                 self.conversations[message.channel.id], message.content)
 
         # otherwise, ignore the message
@@ -327,51 +361,6 @@ class MyClient(discord.Client):
         self.conversations[thread.id] = conversation
         async with thread.typing():
             await thread.send(welcome)
-
-    def parse_blocks(self, text: str, limit=2000):
-        tick = '`'
-        block = ""
-        current_fence = ""
-        for line in text.splitlines():
-            if len(block) + len(line) > limit - 3:
-                if block:
-                    if current_fence:
-                        block += '```'
-                    yield block
-                    block = current_fence
-
-            block += ('\n' + line) if block else line
-
-            if line.strip().startswith(tick * 3):
-                if current_fence:
-                    current_fence = ""
-                else:
-                    current_fence = line
-
-        if block:
-            yield block
-
-    async def send(self, thread: discord.Thread, text: str):
-        for block in self.parse_blocks(text):
-            await thread.send(block)
-
-    async def continue_conversation(
-            self, conversation: Conversation, message_text: str):
-        """
-        Use the OPNENAI API to continue the conversation
-        """
-        thread = conversation.thread
-
-        # while the bot is waiting on a response from the model
-        # set its status as typing for user-friendliness
-        async with thread.typing():
-            response = await query(conversation, message_text)
-
-            if not response:
-                response = 'RubberDuck encountered an error.'
-
-            # send the model's response to the Discord channel
-            await self.send(thread, response)
 
 
 def main(prompts: Path, conversations: Path):
