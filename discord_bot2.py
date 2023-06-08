@@ -90,7 +90,7 @@ async def execute_command(text, channel):
     errors = process.stderr.decode('utf-8')
     if errors:
         await send_in_channel(channel, f'Errors: ```{errors}```')
-    output = str(process.stdout.decode('utf-8'))
+    output = process.stdout.decode('utf-8')
     if output:
         await send_in_channel(channel, f'```{output}```')
     if len(output) > 2000:
