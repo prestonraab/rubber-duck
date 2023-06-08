@@ -30,7 +30,7 @@ def load_env():
 load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
-AI_ENGINE = 'gpt-4'
+AI_ENGINE = 'gpt-3'
 CONVERSATION_TIMEOUT = 60 * 3  # three minutes
 
 
@@ -86,7 +86,6 @@ class MyClient(discord.Client):
         for file in prompt_dir.glob("**/*"):
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
-
 
     def __enter__(self):
         # Register signal handlers
@@ -284,14 +283,33 @@ class MyClient(discord.Client):
             await self.control_on_message(message)
             return
 
+        if message.content.startswith('!help'):
+            await message.channel.send(
+                "```Possible duck channel commands:\n" +
+                "\n".join(["\t!" + key for key in self.prompts.keys()]) +
+                "```")
+            return
+
         # if the message is in a listen channel, create a thread
+        # if the user provides a prompt, use that instead
         # ignore prompt injections for gpt4 channel
         if message.channel.name in self.prompts:
             if not message.channel.name == "gpt4":
                 prefix = self.prompts["duck-pond"]
-                if message.channel.category.name.lower() in self.prompts:
+
+                if message.content.startswith('!'):
+                    assignment = message.content.strip('!')
+
+                    # Bit prompt injection
+                    if "1" in assignment or "2" in assignment and assignment in self.prompts:
+                        prefix += self.prompts["bit-prompt"] + self.prompts[assignment]
+                    elif assignment in self.prompts:
+                        prefix += self.prompts[assignment]
+
+                # hierarchical prompts based on category names
+                elif message.channel.category.name.lower() in self.prompts:
                     prefix += self.prompts[message.channel.category.name.lower()]
-                prefix += self.prompts[message.channel.name]
+                    prefix += self.prompts[message.channel.name]
             else:
                 prefix = self.prompts["gpt4"]
             await self.create_conversation(prefix, message)
@@ -304,7 +322,6 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
-
 
     async def create_conversation(self, prefix, message):
         """
