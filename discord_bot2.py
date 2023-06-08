@@ -315,7 +315,7 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
-        if message.channel.id in self.control_channels or message.channel.name == 'control-duck':
+        if message.channel.id in self.control_channels:
             await control_on_message(message)
             return
         elif message.channel.name == 'control-duck':
