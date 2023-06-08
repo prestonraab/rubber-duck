@@ -1,0 +1,149 @@
+Here are the instructions for the given homework assignment:
+
+
+# Homework 5b -- Building Dictionaries
+
+## 1. Scheduling
+
+Write a program in `scheduling.py` that takes
+
+- a file containing names (one name per line)
+- a file containing time slots (one time per line)
+
+The program assigns each person in the first file to a time slot in the second
+file.
+
+In actual practice, you might choose to randomly assign the individuals to the
+time slots, but for the purposes of grading this activity, simply assign each
+person to the next available time slot, in the order they are listed. So the
+first name is assigned to the first time slot, the second person to the second
+time slot, and so forth.
+
+After each person is assigned a time slot, allow the user to enter the names of
+participants in order to find their assigned time. If the name entered is not
+assigned, indicate that the person has no assignment.
+
+Follow the formatting and prompts of the example.
+
+**Example**
+
+`students.txt`
+
+```
+Juan
+Julia
+Robert
+```
+
+`timeslots.txt`
+
+```
+10:00 AM
+10:30 AM
+11:30 AM
+1:00 PM
+```
+
+```
+python scheduling.py students.txt timeslots.txt
+Name: Julia
+Julia is assigned 10:30 AM
+Name: Charles
+Charles is not assigned a timeslot
+Name: Robert
+Robert is assigned 11:30 AM
+Name:
+
+```
+
+### Strategy
+
+We recommend approaching this problem with the following steps:
+
+1. Fill in `scheduling.py` with basic starter code: `import sys`, `def main...`,
+   `if __name__...`, etc.
+2. Write a function to get a list of lines from a file.
+3. Write a function that strips all the newlines from the ends of a list of
+   lines.
+   1. Using `print` statements or the debugger, make sure these functions work
+      as expected.
+4. Write a function that takes a list of people and a list of times and returns
+   a dictionary that maps people to times. Use the guide for help.
+   1. Again test your code to make sure this function works as expected.
+5. Finish the program using these pieces.
+   1. Write additional functions as necessary.
+
+You can test your program on your own using:
+
+```python
+python scheduling.py students.txt timeslots.txt
+```
+
+## 2. Shopping Carts
+
+Write a program in `shopping_total.py` that takes
+
+- A CSV file representing the contents of a shopping cart
+  - Each line has an item name and quantity
+- A CSV file with item names and prices
+
+The program then prints out the total price for the given shopping cart (rounded
+to 2 decimal places).
+
+Follow the format shown in the example.
+
+**Example**
+
+`items.csv`
+
+```
+pears,2
+peaches,3
+```
+
+`prices.csv`
+
+```
+pears,0.50
+peaches,0.25
+plums,0.15
+```
+
+```
+python shopping_total.py items.csv prices.csv
+The total is $1.75
+```
+
+### Strategy
+
+We recommend approaching this problem using the following steps:
+
+1. Fill in `scheduling.py` with basic starter code: `import sys`, `def main...`,
+   `if __name__...`, etc.
+2. Write a function that reads a list of lines from a file.
+3. Write a function that turns a list of CSV lines into a dictionary that maps
+   the first token to the second token.
+4. Write a function that takes a dictionary of items-to-quantities and a
+   dictionary of items-to-prices and compute the total.
+5. Finish the program.
+
+You can test your program on your own using:
+
+```
+python shopping_total.py items.csv prices.csv
+```
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity      | Points |
+| ------------- | ------ |
+| Scheduling    | 10     |
+| Shopping Cart | 10     |
+
+Manual grading will focus on decomposition, fluency, and use of dictionaries.

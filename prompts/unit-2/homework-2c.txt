@@ -1,0 +1,190 @@
+These are the exact instructions that students are provided with for homework 2b.
+Refer explicitly back to these instructions when asked for help.
+As often as possible, give the student example code to clarify what you mean.
+When possible, give the student ideas for good decomposition. Give them possible functions that they may need to implement.
+
+The best solutions will have clean decomposition, so direct students to never have excessive code and a well broken-down skeleton.
+
+
+Homework 2c — Decomposition
+1. Barcodes
+For this problem, Bit wants to finish the barcodes. There are two starting worlds:
+#1:
+----------
+----------
+----------
+----------
+--b--bb--b
+0 0
+0
+
+#2:
+----------
+----------
+----------
+----------
+-b-b----b-
+0 0
+0
+
+The finishing worlds should look like this:
+
+#1:
+--b--bb--b
+--b--bb--b
+--b--bb--b
+--b--bb--b
+--b--bb--b
+9 0
+0
+
+#2:
+-b-b----b-
+-b-b----b-
+-b-b----b-
+-b-b----b-
+-b-b----b-
+9 0
+0
+
+
+The starter code is in barcodes.py. This is the starter code, which is the same for the rest of the activities:
+```from byubit import Bit
+
+
+@Bit.worlds('barcode', 'barcode2')
+def run(bit):
+    # Write code here
+    pass
+
+
+if __name__ == '__main__':
+    run(Bit.new_bit)
+```
+
+2. Soccer fields
+For this problem, Bit wants to plant grass in the soccer fields. There are two starting worlds:
+
+#1:
+kkkkkkkkkkkkkkkkkk
+k------k-----k---k
+k------------k---k
+k------k-----k----
+-------k---------k
+k------k-----k---k
+kkkkkkkkkkkkkkkkkk
+0 2
+0
+
+#2:
+kkkkkkkkkkkkkkkkkkkkk
+k----k-----k---k----k
+k----k-----k--------k
+k----k-----k---k----k
+k----------k---k----k
+k----k-----k---k----k
+-----k---------k----k
+k----k-----k---k-----
+k----k-----k---k----k
+kkkkkkkkkkkkkkkkkkkkk
+0 3
+0
+
+Bit’s job is to put green inside each soccer field:
+
+#1:
+kkkkkkkkkkkkkkkkkk
+kggggggkgggggkgggk
+kgggggg-gggggkgggk
+kggggggkgggggkggg-
+-ggggggkggggg-gggk
+kggggggkgggggkgggk
+kkkkkkkkkkkkkkkkkk
+17 3
+0
+
+#2:
+kkkkkkkkkkkkkkkkkkkkk
+kggggkgggggkgggkggggk
+kggggkgggggkggg-ggggk
+kggggkgggggkgggkggggk
+kgggg-gggggkgggkggggk
+kggggkgggggkgggkggggk
+-ggggkggggg-gggkggggk
+kggggkgggggkgggkgggg-
+kggggkgggggkgggkggggk
+kkkkkkkkkkkkkkkkkkkkk
+20 2
+0
+
+The starter code is in soccer_fields.py.
+
+3. Bit-a-thon
+Bit is participating in a triathalon! Help Bit climb down a mountain, swim across the river, and then cycle to the finish line. There are two race courses:
+
+#1:
+---------------------------
+---------------------------
+kk-------------------------
+kkkk-----------------------
+kkkk-----------------------
+kkkkk----------------------
+kkkkkkkbbbbbbbbbbbbbkkkkkkk
+kkkkkkkkkbbbbbbbbbkkkkkkkkk
+kkkkkkkkkkkkkkkkkkkkkkkkkkk
+0 7
+0
+
+#2
+---------------------------
+---------------------------
+k--------------------------
+kkk------------------------
+kkk------------------------
+kkkkkk---------------------
+kkkkkkkbbbbbbbkkkkkkkkkkkkk
+kkkkkkkkkbbbbbbbbbkkkkkkkkk
+kkkkkkkkkkkkkkkkkkkkkkkkkkk
+0 7
+0
+
+
+Bit should finish the course, tracing the running path in green and the cycling path in red:
+
+#1:
+---------------------------
+ggg------------------------
+kkggg----------------------
+kkkkg----------------------
+kkkkgg---------------------
+kkkkkggg------------rrrrrrr
+kkkkkkkbbbbbbbbbbbbbkkkkkkk
+kkkkkkkkkbbbbbbbbbkkkkkkkkk
+kkkkkkkkkkkkkkkkkkkkkkkkkkk
+26 3
+0
+
+#2:
+---------------------------
+gg-------------------------
+kggg-----------------------
+kkkg-----------------------
+kkkgggg--------------------
+kkkkkkgg------rrrrrrrrrrrrr
+kkkkkkkbbbbbbbkkkkkkkkkkkkk
+kkkkkkkkkbbbbbbbbbkkkkkkkkk
+kkkkkkkkkkkkkkkkkkkkkkkkkkk
+26 3
+0
+
+
+The starter code is in bitathon.py.
+
+
+Grading
+Activity	Points
+barcodes.py	4
+soccer_fields.py	8
+bitathon.py	8
+
+Manual grading will focus on decomposition and fluency (i.e. appropriate use of themes presented so far in class).

@@ -1,0 +1,103 @@
+Here are the instructions for the given homework assignment:
+
+
+# Project 3 - Youth Baseball
+
+For this project, you need to write a program that registers players for
+baseball teams in a youth league. There are two teams:
+
+- Bigs -- players over 10 years old
+- Littles -- players 10 years and younger
+
+The program should allow you to enter all the players and their ages, then print
+out a report on the two teams.
+
+## Registration
+
+The registration program needs two things to register a player:
+
+- name
+- age
+
+The program should automatically assign players to the two teams based on their
+age.
+
+## Report
+
+For each team, the program prints:
+
+- Total members
+- Average age (rounded to zero decimal places)
+- Youngest age
+- Oldest age
+- Members (in a bulleted list)
+
+## Sample Input/Output
+
+Here is some sample input and output:
+
+```
+Enter player name: Willie Mays
+Enter player age: 10
+Enter player name: Mike Trout
+Enter player age: 4
+Enter player name: Cat Osterman
+Enter player age: 13
+Enter player name: Jocelyn Alo
+Enter player age: 15
+Enter player name: Mike Trout
+Enter player age: 8
+Enter player name: Ted Williams
+Enter player age: 9
+Enter player name: Dot Richardson
+Enter player age: 6
+Enter player name:
+Team Bigs
+Total members: 2
+Average age: 14
+Youngest age: 13
+Oldest age: 15
+Members
+ - Cat Osterman 13
+ - Jocelyn Alo 15
+Team Littles
+Total members: 5
+Average age: 7
+Youngest age: 4
+Oldest age: 10
+Members
+ - Willie Mays 10
+ - Mike Trout 4
+ - Mike Trout 8
+ - Ted Williams 9
+ - Dot Richardson 6
+```
+
+## Sample Code
+
+You can find sample code in `youth_baseball.py`.
+
+## Testing
+
+1. You should test your program on your own before you run the tests we provide.
+
+2. When you are ready to run our tests, you will need to upgrade the
+   `byu-pytest-utils` package. Read the
+   [guide on upgrading a package](/guide/unit3/upgrading-a-package) to do this.
+
+3. When you are ready to submit, use Gradescope. The grader has been setup to
+   award partial credit. The points awarded are shown below. In addition, each
+   section has partial credit. For example, if you are missing only a space in
+   your output, you will get most of the credit.
+
+## Grading
+
+| Activity               | Points             |
+| ---------------------- | ------------------ |
+| Reading in the players | 5 (for each team)  |
+| Total members          | 5 (for each team)  |
+| Average age            | 10 (for each team) |
+| Youngest age           | 10 (for each team) |
+| Oldest age             | 10 (for each team) |
+| Member list            | 10 (for each team) |
+| Total                  | 100 points         |

@@ -1,0 +1,194 @@
+Here are the instructions for the given homework assignment:
+
+
+# Homework 4f -- Random and coiteration
+
+## 1. Random asterisks
+
+Write a function named `random_asterisks()` that takes two arguments:
+
+- a text (string)
+- a frequency (float)
+
+This function uses the frequency to "roll the dice" for each word in the text
+and randomly determine whether it will replace the word with an 
+asterisk (`*`). For example, if we call this function with:
+
+```
+random_asterisks("my dog has fleas", 0.5)
+```
+
+This means there is a `50%` chance that any given word will be replaced with an
+ asterisk. The word "my" has a `50%` chance of
+being replaced with `*`, the word "dog" has a `50%` chance of being replaced
+with `*`, the word "has" has a `50%` chance of being replaced with
+`*`, and so forth.
+
+Since the function uses random numbers, every time you call it you may get a
+different result. Here are some examples of what could happen:
+
+```python
+# 50% chance that a word is changed to an asterisk
+random_asterisks("my dog has fleas", 0.5)
+'* dog has *'
+
+# 100% chance that a word is changed to an asterisk
+random_asterisks("my dog has fleas", 1)
+'* * * *'
+
+# 0% chance that a word is changed to an asterisk
+random_asterisks("my dog has fleas", 0)
+'my dog has fleas'
+
+# 50% chance that a word is changed to an asterisk
+random_asterisks("1 2 3 11 12 13 14 15 16 100 101", 0.5)
+'1 * 3 11 12 * * 15 16 * *'
+```
+
+**Hints**
+
+You will need a line of code that is true or false with a certain chance.
+Example code can be found in the Random Float section in the
+[guide on random](/guide/unit4/random).
+
+The pytest only runs your `random_asterisks` function. You do not need to use
+system arguments. You can write a main block to test your `random_asterisks`
+function yourself:
+
+```python
+if __name__ == '__main__':
+	random_asterisks("my dog has fleas", 0.5)
+```
+
+You might try the examples from above as your text and frequency.
+
+## 2. Compare strings
+
+Write a program named `compare_strings.py` that prompts the user for two words.
+Then compare the words character-by-character and print the result.
+
+- If the pair of characters match, output a `*`
+- If the pair does not match, output a `.`
+
+The user enters an empty string for word 1 to end the program.
+
+Follow is some example input and output. Follow this same format.
+
+```
+python compare_strings.py
+Word 1: when
+Word 2: what
+**..
+Word 1: tacos
+Word 2: catch
+.*...
+Word 1:
+```
+
+**Note**
+
+You will want to write you own main block, such as:
+
+```python
+def main():
+	# Write code here
+
+
+if __name__ == '__main__':
+	main()
+```
+
+## 3. Word guess
+
+Write a program named `word_guess.py` that takes a file as an argument. This
+file should contain a sequence of words, one word per line.
+
+The program then randomly chooses a word from this file for the user to guess.
+The user guesses a word:
+
+- if the guess matches the secret word, print "That's it!"
+- otherwise, if the guess is a substring of the secret word, print "almost"
+- otherwise, if **any** of the letters in the guess can be found in the secret
+  word, print "close"
+- otherwise print "nope"
+
+The file `word_list.txt` contains an example file to use for input:
+
+`word_list.txt`
+
+```
+cat
+dog
+fish
+```
+
+Following is an example of how you might run the program:
+
+```
+% python word_guess.py word_list.txt
+Guess a word: dog
+nope
+Guess a word: ball
+close
+Guess a word: at
+almost
+Guess a word: cat
+That's it!
+```
+
+Following is an example of how you might run the program:
+
+```
+% python word_guess.py word_list.txt
+Guess a word: fish
+nope
+Guess a word: cat
+nope
+Guess a word: done
+close
+Guess a word: do
+almost
+Guess a word: dog
+That's it!
+```
+
+**Tips**
+
+When reading in lines from a file, each line will end with a newline character
+`\n`. You may find it useful to remove this character using strip. For example:
+
+```python
+line = line.strip()
+```
+
+This will remove any whitespace from the start and end of line, including the
+newline character.
+
+For the "close" option, the best thing is to make a new function that takes two
+words.
+
+```python
+def any_char_in_word(word1, word2):
+	# Write code here
+```
+
+This function could iterate through each character in the first word, and return
+True if the character is in the second word. It should return False if there are
+no characters in the first word that are in the second word. You do not need to
+use zip.
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity         | Points |
+| ---------------- | ------ |
+| Random Asterisks | 5      |
+| Compare Strings  | 5      |
+| Word Guess       | 10     |
+
+Manual grading will focus on decomposition, fluency, and use of coiteration.

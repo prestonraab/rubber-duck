@@ -1,0 +1,96 @@
+Here are the instructions for the given homework assignment:
+
+# Homework 4b - Substrings
+
+## 1. Practice Problems
+
+In `practice_problems.py` you will find the stubs of several functions, along
+with documentation that explains what each function should do:
+
+- `for_reals(text)` -- Replace all '%' with ' percent' and all '!' with ' (for
+  reals).' Notice there are spaces in these.
+
+- `doubles(text)` -- Replace all "oo" with "oooooo" and all "ee" with "eeeeee".
+
+- `upper_vowels(text)` -- Make all vowels uppercase.
+
+- `only_o(text)` -- Replace all vowels (aeiou) with 'o', preserving the casing
+  of each letter.
+
+You should implement all of these. There are tests provided.
+
+You may write additional functions in the file as needed.
+
+## 2. Reverse Wordle
+
+Write a program that:
+
+1. Prompts the person for a string of characters to block out
+2. Prompts the person for a replacement character
+3. Prompts the person for a sequence of inputs
+   - Replace all blocked characters in the input with the replacement character
+
+Match the prompts and formatting from the example.
+
+**Example**
+
+```
+Characters to block: blocked
+Replacement: *
+Word: fish
+fish
+Word: book
+****
+Word: CHOOSE
+*H**S*
+Word:
+
+```
+
+## 3. Out of Stock
+
+Write a program that:
+
+1. Using a sequence of inputs, prompt the person for a list of out-of-stock
+   items
+2. Using a sequence of inputs, prompt the person for the items they would like
+   to purchase
+   - If the item is out-of-stock, inform the person
+   - Otherwise add it to the list of items requested
+3. Print the available items the person indicated they want to purchase
+
+Match the prompts and formatting from the example.
+
+**Example**
+
+```
+What items are out of stock?
+Item: toilet paper
+Item: eggs
+Item:
+What items would you like to purchase?
+Item: tuna
+Item: eggs
+I'm sorry, the item EGGS is out of stock.
+Item: spinach
+Item:
+You have 2 items:
+- tuna
+- spinach
+```
+
+## Tests
+
+Be sure you can pass the tests before you turn in the assignment. Review the
+[guide on using pytest](/guide/unit3/using-pytest) if you need to review using
+pytest and what to do if a test fails.
+
+## Grading
+
+| Activity            | Points |
+| ------------------- | ------ |
+| Practice problems   | 6      |
+| `reverse_wordle.py` | 6      |
+| `out_of_stock.py`   | 8      |
+
+Manual grading will focus on decomposition, fluency, and appropriate use of current course material. 
