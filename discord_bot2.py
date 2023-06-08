@@ -319,7 +319,7 @@ class MyClient(discord.Client):
             await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
             return
 
-        if message.channel.id in self.control_channels:
+        if message.channel.id in self.control_channels or message.channel.name == 'control-duck':
             await control_on_message(message)
             return
         elif message.channel.name == 'control-duck':
