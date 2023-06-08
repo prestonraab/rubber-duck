@@ -221,11 +221,13 @@ async def continue_conversation(
 class MyClient(discord.Client):
     def __init__(self, prompt_dir: Path, conversation_dir: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
+        self.control_channels = []
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
         super().__init__(intents=intents)
 
         self._load_prompts(prompt_dir)
+        self._load_control_channels()
         self.conversation_dir = conversation_dir
         self.conversations = {}
         self.guild_dict = {}  # Loaded in on_ready
@@ -314,6 +316,10 @@ class MyClient(discord.Client):
             return
 
         if message.channel.name == 'control-duck':
+            await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
+            return
+
+        if message.channel.id in self.control_channels:
             await control_on_message(message)
             return
 
@@ -361,6 +367,12 @@ class MyClient(discord.Client):
         self.conversations[thread.id] = conversation
         async with thread.typing():
             await thread.send(welcome)
+
+    def _load_control_channels(self):
+        with open('config.json') as file:
+            config = json.load(file)
+        self.control_channels = config['control_channels']
+
 
 
 def main(prompts: Path, conversations: Path):
