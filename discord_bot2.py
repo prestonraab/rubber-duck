@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 
 import argparse
-
 from typing import TypedDict
 
 from discord import ChannelType
