@@ -6,9 +6,8 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-import argparse
-import shlex
 
+import argparse
 from typing import TypedDict
 
 from discord import ChannelType
@@ -86,7 +85,6 @@ class MyClient(discord.Client):
         for file in prompt_dir.glob("**/*"):
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
-
 
     def __enter__(self):
         # Register signal handlers
@@ -285,15 +283,11 @@ class MyClient(discord.Client):
             return
 
         # if the message is in a listen channel, create a thread
-        # ignore prompt injections for gpt4 channel
         if message.channel.name in self.prompts:
-            if not message.channel.name == "gpt4":
-                prefix = self.prompts["duck-pond"]
-                if message.channel.category.name.lower() in self.prompts:
-                    prefix += self.prompts[message.channel.category.name.lower()]
-                prefix += self.prompts[message.channel.name]
-            else:
-                prefix = self.prompts["gpt4"]
+            prefix = ""
+            if message.channel.category.name.lower() in self.prompts:
+                prefix += self.prompts[message.channel.category.name.lower()]
+            prefix += self.prompts[message.channel.name]
             await self.create_conversation(prefix, message)
 
         # if the message is in an active thread, continue the conversation
@@ -304,7 +298,6 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
-
 
     async def create_conversation(self, prefix, message):
         """
