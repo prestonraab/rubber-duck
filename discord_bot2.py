@@ -30,7 +30,7 @@ def load_env():
 load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
-AI_ENGINE = 'gpt-3'
+AI_ENGINE = 'gpt-4'
 CONVERSATION_TIMEOUT = 60 * 3  # three minutes
 
 
