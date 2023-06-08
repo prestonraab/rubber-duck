@@ -315,10 +315,6 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
-        if message.channel.name == 'control-duck':
-            await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
-            return
-
         if message.channel.id in self.control_channels or message.channel.name == 'control-duck':
             await control_on_message(message)
             return
