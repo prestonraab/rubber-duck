@@ -322,6 +322,9 @@ class MyClient(discord.Client):
         if message.channel.id in self.control_channels:
             await control_on_message(message)
             return
+        elif message.channel.name == 'control-duck':
+            await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
+            return
 
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
