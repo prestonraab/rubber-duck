@@ -6,6 +6,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+
 import argparse
 
 from typing import TypedDict
@@ -85,7 +86,6 @@ class MyClient(discord.Client):
         for file in prompt_dir.glob("**/*"):
             if file.suffix == '.txt':
                 self.prompts[file.stem] = file.read_text()
-
 
     def __enter__(self):
         # Register signal handlers
@@ -284,7 +284,6 @@ class MyClient(discord.Client):
             return
 
         # if the message is in a listen channel, create a thread
-        # ignore prompt injections for gpt4 channel
         if message.channel.name in self.prompts:
             prefix = ""
             if message.channel.category.name.lower() in self.prompts:
