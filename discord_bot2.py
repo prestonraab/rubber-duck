@@ -4,7 +4,7 @@ import logging
 import signal
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import argparse
@@ -59,6 +59,9 @@ class Conversation:
             "last_message": self.last_message.isoformat(),
             "messages": self.messages
         }
+
+    def is_active(self) -> bool:
+        return (self.last_message - datetime.now()) > timedelta(days=1)
 
     @staticmethod
     def from_json(jobj: dict, thread: discord.Thread) -> 'Conversation':
@@ -190,8 +193,6 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
         await thread.send(block)
 
 
-
-
 async def continue_conversation(
         conversation: Conversation, message_text: str):
     """
@@ -271,6 +272,17 @@ class MyClient(discord.Client):
         except Exception as ex:
             logging.exception(f"Unable to load conversation: {filename}")
 
+    async def _purge_conversation(self, conversation: Conversation):
+        # Purge conversation from self.conversations_dir, and delete the Discord thread
+        filename = f'{conversation.guild_id}_{conversation.thread_id}.json'
+        logging.debug(f'Purging conversation {filename}')
+        try:
+            (self.conversation_dir / filename).unlink()
+            del self.conversations[conversation.thread_id]
+            await conversation.thread.purge()  # Is this something we want to do?
+        except Exception as ex:
+            logging.exception(f"Unable to purge conversation: {filename}")
+
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
 
@@ -280,6 +292,12 @@ class MyClient(discord.Client):
             if file.suffix == '.json':
                 self._load_conversation(file.name)
         logging.info('Done loading conversations')
+
+        logging.info('Purging inactive conversations')
+        for conversation in self.conversations.values():
+            if not conversation.is_active():
+                await self._purge_conversation(conversation)
+        logging.info('Done purging inactive conversations')
 
         # print out information when the bot wakes up
         logging.info('Logged in as')
@@ -359,7 +377,6 @@ class MyClient(discord.Client):
             config = json.load(file)
         self.control_channel_ids = config['control_channels']
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
-
 
 
 def main(prompts: Path, conversations: Path):
