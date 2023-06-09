@@ -1,33 +1,20 @@
-import asyncio
 import json
 import logging
 import os
 import signal
 import subprocess
-import uuid
-from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-import re
-from random import randint
-from textwrap import dedent
-import boto3
-from botocore.exceptions import ClientError
 
 import discord
-from discord import ChannelType
 import openai
 import argparse
-import shutil
 
 from typing import Callable, TypedDict, Union, List
 
-from quest import event, signal, WorkflowManager
 from quest import event, signal as quest_signal
-from quest.json_seralizers import JsonMetadataSerializer, JsonEventSerializer
 from quest.workflow_manager import WorkflowSerializer, WorkflowManager
-from quest.json_seralizers import JsonMetadataSerializer, JsonEventSerializer, StatelessWorkflowSerializer
-from quest.workflow import Status, Workflow, WorkflowFunction
+from quest.json_seralizers import JsonMetadataSerializer, JsonEventSerializer
+from quest.workflow import WorkflowFunction
 
 logging.basicConfig(level=logging.DEBUG)
 INPUT_EVENT_NAME = 'input'
@@ -75,7 +62,6 @@ class DuckResponseFlow:
         for channel in self.control_channels:
             await channel.send(text)
 
-
     @event
     async def respond(self, message_text: str):
 
@@ -93,7 +79,7 @@ class DuckResponseFlow:
             # send the model's response to the Discord channel
             await send(self.thread, response)
 
-    @signal
+    @quest_signal(INPUT_EVENT_NAME)
     async def query(self, message_text: str):
         """
         Query the OPENAI API
@@ -119,8 +105,6 @@ class DuckResponseFlow:
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
         ...
-
-
 
 
 def parse_blocks(text: str, limit=2000):
@@ -160,7 +144,6 @@ class DuckControlFlow:
     async def __call__(self):
         await self.control_on_message()
 
-
     @event
     async def control_on_message(self):
         """
@@ -184,8 +167,6 @@ class DuckControlFlow:
             await self.display_help()
         elif content.startswith('!'):
             await self.message.channel.send('Unknown command. Try !help')
-
-
 
     @event
     async def display(self, text: str):
@@ -237,8 +218,6 @@ class DuckControlFlow:
         return
 
 
-
-
 class DiscordWorkflowSerializer(WorkflowSerializer):
     def __init__(self, create_workflow: Callable[[], WorkflowFunction], discord_client: discord.Client, folder: Path):
         self.create_workflow = create_workflow
@@ -247,7 +226,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
 
     def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
         # Serialize workflow to specified folder location with metadata
-        # create a dict to searlize
+        # create a dict to serialize
         metadata = {"tid": workflow_id, "wid": workflow_id}
         file_to_save = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_save, 'w') as file:
@@ -275,6 +254,7 @@ class MyClient(discord.Client):
         super().__init__(intents=intents)
 
         self.workflow_manager = None
+        self.log_file = log_file
 
         self._load_prompts(prompt_dir)
         self._load_control_channels()
@@ -364,9 +344,10 @@ class MyClient(discord.Client):
             dict(role='system', content=prefix or message.content)
         ]
         # start new register user workflow
-        await self.workflow_manager.start_async_workflow(str(thread.id),
-                                                         DuckResponseFlow(thread, message.author, messages, self.control_channels),
-                                                         str(message.author.mention))
+        await self.workflow_manager.start_async_workflow(
+            str(thread.id),
+            DuckResponseFlow(thread, message.author, messages, self.control_channels),
+            str(message.author.mention))
         # TODO::Should we handle messages that finish out of the gate?
 
     async def _continue_conversation(self, thread_id, text: str):
