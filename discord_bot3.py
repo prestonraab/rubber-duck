@@ -33,12 +33,9 @@ logging.basicConfig(level=logging.DEBUG)
 INPUT_EVENT_NAME = 'input'
 
 
-
-
-
 def load_env():
-    with open('secrets.env') as file:
-        for line in file:
+    with open('.env') as f:
+        for line in f:
             key, value = line.strip().split('=')
             os.environ[key] = value
 
@@ -53,60 +50,145 @@ CONVERSATION_TIMEOUT = 60 * 3  # three minutes
 class GPTMessage(TypedDict):
     role: str
     content: str
+
+
 class DuckResponseFlow:
-    @event
-    async def throw_error(self):
-        raise Exception("This is a test")
+    def __init__(self, channel: discord.Thread):
+        self.channel = channel
+        # initialize error channel
+        channel_name = "registration-bot-log"
+        self.error_channel = discord.utils.get(channel.guild.channels, name=channel_name)
+        if self.error_channel is None:
+            self.error_channel = self.create_text_channel(self.channel, channel_name)
 
     @event
     async def display(self, text: str):
-        print(text)
+        await self.channel.send(text)
 
-    @signal(INPUT_EVENT_NAME)
-    async def get_input(self, test): ...
+    @event
+    async def display_error(self, text: str):
+        await self.error_channel.send(text)
 
-    async def get_name(self):
-        await self.display('Name: ')
-        return await self.get_input("this works")
+    @event
+    async def add_role(self, role, name):
+        user = None
+        for member in self.channel.guild.members:
+            if member.name.lower() == self.channel.name.lower():
+                user = member
+                break
+        await user.add_roles(role)
+        await user.edit(nick=name)
+
+    @event
+    async def get_uuid(self):
+        return str(randint(1000000, 9999999))
+
+    @event
+    async def create_text_channel(self, channel, channel_name):
+        await channel.guild.create_text_channel(channel_name)
+
+    @event
+    async def get_user_info(self, sid):
+        user = self.canvas.get_user(str(sid), 'sis_login_id')
+        email = user.get_profile().get('primary_email')
+        return {"email": str(email), "id": str(user.id), "name": str(user.short_name)}
+
+    @quest_signal(INPUT_EVENT_NAME)
+    def get_input(self):
+        ...
 
     async def get_student_id(self):
-        await self.display('Student ID: ')
+        await self.display('Please enter your BYU NetID: ')
         return await self.get_input()
 
-    async def __call__(self, welcome_message):
-        await self.display(welcome_message)
-        name = await self.get_name()
+    async def __call__(self, user_mention):
+        await self.display(f'Hello {user_mention}')
+        # name = self.get_name()
         sid = await self.get_student_id()
-        return f'Name: {name}, ID: {sid}'
+        user_info = await self.get_user_from_canvas(sid)
+        if user_info is not None:
+            if await self.authenticate_user(user_info):
+                await self.assign_user_roles(user_info)
 
-@dataclass
-class Conversation:
-    thread: discord.Thread
-    guild_id: int
-    thread_id: int
-    thread_name: str
-    started_by: str
-    first_message: datetime
-    last_message: datetime
-    messages: list[GPTMessage]
+    @event
+    async def assign_user_roles(self, user_info):
+        # Get the role name
+        role_name = "NO_ROLE"
+        enrollments = self.course.get_enrollments(user_id=user_info['id'])
+        for enrollment in enrollments:
+            if enrollment.course_section_id:
+                section = self.canvas.get_section(enrollment.course_section_id)
+                print(f"User's section: {section}")
+                role_name = "section-" + str(section.name)
+                break
+        role = discord.utils.get(self.channel.guild.roles, name=role_name)
+        if role is not None:
+            # Get role servername
+            section_name = re.sub(r'[^a-zA-Z0-9\s]', '', role_name).lower()
+            # Replace spaces with hyphens
+            section_name = re.sub(r'\s+', '-', section_name)
+            section_name = re.sub(r'section', '', section_name)
+            guild = self.channel.guild
+            await self.add_role(role, user_info['name'])
 
-    def to_json(self):
-        return {
-            "guild_id": self.guild_id,
-            "thread_id": self.thread_id,
-            "thread_name": self.thread_name,
-            "started_by": self.started_by,
-            "first_message": self.first_message.isoformat(),
-            "last_message": self.last_message.isoformat(),
-            "messages": self.messages
-        }
+            annoucements_channel = discord.utils.get(guild.channels, name='announcements').mention
+            help_channel = discord.utils.get(guild.channels, name='help').mention
+            random_channel = discord.utils.get(guild.channels, name='random').mention
+            section_channel = discord.utils.get(guild.channels, name='section-' + section_name).mention
+            lecture_channel = discord.utils.get(guild.channels, name='lecture-' + section_name).mention
+            await self.display(dedent(f"""
+                                      Authentication code is correct. Welcome to the CS110 discord server!         
+                                      You are in section {section_name}. 
+                                      {annoucements_channel} will have important communications from the Instructors and TAs. Be sure to read all messages there.
+                                      {help_channel} can be a good place to start if you need help.
+                                      {random_channel}  is a place for sharing random stuff - make it fun!
+                                      {section_channel} is for communicating with members of your lab section.
+                                      {lecture_channel} is for communicating with members of your lecture section, as well as receive class-specific information from your instructor.
+                                      """))
+        else:
+            await self.display("Something went wrong. Try again.")
+            await self.display_error("ERROR in assign_user_roles: Role not found -- " + role_name)
 
-    @staticmethod
-    def from_json(jobj: dict, thread: discord.Thread) -> 'Conversation':
-        jobj['first_message'] = datetime.fromisoformat(jobj['first_message'])
-        jobj['last_message'] = datetime.fromisoformat(jobj['last_message'])
-        jobj['thread'] = thread
-        return Conversation(**jobj)
+    @event
+    async def get_user_from_canvas(self, sid):
+        try:
+            user_info = await self.get_user_info(sid)
+            # self.display("Canvas user authenticated")
+            return user_info
+        except canvas_exception.ResourceDoesNotExist as e:
+            await self.display("Canvas user does not exist. Try again.")
+            await self.display_error("Canvas user not found with sid: " + str(sid))
+        except Exception as e:
+            await self.display("Something went wrong. Try again.")
+            await self.display_error("EXCEPTION in getting user from Canvas: " + str(e))
+        return None
+
+
+class DiscordWorkflowSerializer(WorkflowSerializer):
+    def __init__(self, create_workflow: Callable[[], WorkflowFunction], discord_client: discord.Client, folder: Path):
+        self.create_workflow = create_workflow
+        self.folder = folder
+        self.discord_client = discord_client
+
+    def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
+        # Serialize workflow to specified folder location with metadata
+        # create a dict to searlize
+        metadata = {"tid": workflow_id, "wid": workflow_id}
+        file_to_save = "workflow" + workflow_id + ".json"
+        with open(self.folder / file_to_save, 'w') as file:
+            json.dump(metadata, file)
+
+    def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
+        # Load the file with key
+        file_to_load = "workflow" + workflow_id + ".json"
+        with open(self.folder / file_to_load) as file:
+            workflow_metadata = json.load(file)
+            thread = self.get_thread(workflow_metadata['tid'])
+            return self.create_workflow(thread)
+
+    def get_thread(self, tid) -> discord.Thread:
+        thread = self.discord_client.get_channel(int(tid))
+        return thread
 
 
 async def display_help(message):
@@ -232,35 +314,19 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
         await thread.send(block)
 
 
-async def continue_conversation(
-        conversation: Conversation, message_text: str):
-    """
-    Use the OPNENAI API to continue the conversation
-    """
-    thread = conversation.thread
-
-    # while the bot is waiting on a response from the model
-    # set its status as typing for user-friendliness
-    async with thread.typing():
-        response = await query(conversation, message_text)
-
-        if not response:
-            response = 'RubberDuck encountered an error.'
-
-        # send the model's response to the Discord channel
-        await send(thread, response)
-
-
 class MyClient(discord.Client):
-    def __init__(self, prompt_dir: Path, conversation_dir: Path):
+    def __init__(self, prompt_dir: Path, channels):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
+        intents.members = True
         super().__init__(intents=intents)
+
+        self.channels = channels
+        self.workflow_manager = None
 
         self._load_prompts(prompt_dir)
         self._load_control_channels()
-        self.conversations = {}
         self.guild_dict = {}  # Loaded in on_ready
 
     def _load_prompts(self, prompt_dir: Path):
@@ -276,50 +342,20 @@ class MyClient(discord.Client):
 
         return self
 
-    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
-        # serialize the conversations
-        logging.info('Serializing conversations')
-        for conversation in self.conversations.values():
-            self._serialize_conversation(conversation)
-        logging.info('Done serializing conversations')
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # make sure the state is saved in workflow manager
+        self.workflow_manager.save_workflows()
 
     def _handle_interrupt(self, signum=None, frame=None):
-        self.__exit__()
+        self.__exit__(None, None, None)
         exit()
-
-    def _serialize_conversation(self, conversation: Conversation):
-        # Save conversation as JSON in self.conversations_dir
-        logging.debug(f'Serializing conversation {conversation.thread_id}')
-        filename = f'{conversation.guild_id}_{conversation.thread_id}.json'
-        with open(self.conversation_dir / filename, 'w') as file:
-            json.dump(conversation.to_json(), file)
-
-    def _load_conversation(self, filename: str):
-        # Load conversation from JSON in self.conversations_dir
-        logging.debug(f'Loading conversation {filename}')
-        try:
-            with open(self.conversation_dir / filename) as file:
-                jobj = json.load(file)
-
-            guild = self.guild_dict.get(jobj['guild_id'])
-            if guild is None:
-                return
-            thread_id = jobj['thread_id']
-            thread = self.get_channel(thread_id)
-            self.conversations[thread_id] = Conversation.from_json(jobj, thread)
-        except Exception as ex:
-            logging.exception(f"Unable to load conversation: {filename}")
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
 
-        # Load conversations from JSON in self.conversations_dir
-        logging.info('Loading conversations')
-        for file in self.conversation_dir.iterdir():
-            if file.suffix == '.json':
-                self._load_conversation(file.name)
-        logging.info('Done loading conversations')
-
+        # contextualize members
+        self.workflow_manager.load_workflows()
+        await self.workflow_manager.resume_workflows()
         # print out information when the bot wakes up
         logging.info('Logged in as')
         logging.info(self.user.name)
@@ -349,49 +385,36 @@ class MyClient(discord.Client):
             return
 
         # if the message is in a listen channel, create a thread
-        if message.channel.name in self.prompts:
-            await self.create_conversation(self.prompts[message.channel.name], message)
+        if message.channel.name in self.channels:
+            await self._create_conversation(message)
 
         # if the message is in an active thread, continue the conversation
-        elif message.channel.id in self.conversations:
-            await continue_conversation(
-                self.conversations[message.channel.id], message.content)
+        elif self.workflow_manager.has_workflow(str(message.channel.id)):
+            await self._continue_conversation(str(message.channel.id), message.content)
 
         # otherwise, ignore the message
         else:
             return
 
-    async def create_conversation(self, prefix, message):
-        """
-        Create a thread in response to this message.
-        """
-        # get the channel from the message
-        channel = message.channel
-
-        # create a public thread in response to the message
-        thread = await channel.create_thread(
-            name=message.content[:20],
-            type=ChannelType.public_thread,
+    async def _create_conversation(self, message: discord.Message):
+        # Create a private thread in the message channel
+        thread = await message.channel.create_thread(
+            name=message.author.name,
             auto_archive_duration=60
         )
-        welcome = f'{message.author.mention} What can I do for you?'
+        # start new register user workflow
+        await self.workflow_manager.start_async_workflow(str(thread.id), DuckResponseFlow(thread),
+                                                         str(message.author.mention))
+        # TODO::Should we handle messages that finish out of the gate?
 
-        conversation = Conversation(
-            guild_id=thread.guild.id,
-            thread=thread,
-            thread_id=thread.id,
-            thread_name=thread.name,
-            started_by=message.author.name,
-            first_message=datetime.utcnow(),
-            last_message=datetime.utcnow(),
-            messages=[
-                dict(role='system', content=prefix or message.content),
-                dict(role='assistant', content=welcome)
-            ]
-        )
-        self.conversations[thread.id] = conversation
-        async with thread.typing():
-            await thread.send(welcome)
+    async def _continue_conversation(self, thread_id, text: str):
+        # Get the conversation
+        result = await self.workflow_manager.signal_async_workflow(thread_id, INPUT_EVENT_NAME, text)
+        if result is not None:
+            logging.debug(f'Conversation {thread_id} complete.')
+
+    def set_workflow_manager(self, workflow_manager: WorkflowManager):
+        self.workflow_manager = workflow_manager
 
     def _load_control_channels(self):
         with open('config.json') as file:
