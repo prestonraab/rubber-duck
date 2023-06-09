@@ -289,10 +289,8 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
-        channels = self.get_all_channels()
-        for channel in channels:
-            if channel.name == 'control-duck':
-                await channel.send('Duck online')
+        for channel in self.control_channels:
+            await channel.send('Duck online')
 
     async def on_message(self, message: discord.Message):
         """
@@ -310,11 +308,8 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
-        if message.channel.id in self.control_channels:
+        if message.channel.id in self.control_channel_ids:
             await control_on_message(message)
-            return
-        elif message.channel.name == 'control-duck':
-            await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
             return
 
         # if the message is in a listen channel, create a thread
@@ -365,7 +360,8 @@ class MyClient(discord.Client):
     def _load_control_channels(self):
         with open('config.json') as file:
             config = json.load(file)
-        self.control_channels = config['control_channels']
+        self.control_channel_ids = config['control_channels']
+        self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
 
