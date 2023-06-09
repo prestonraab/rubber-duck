@@ -130,7 +130,7 @@ async def control_on_message(message):
         await execute_command("touch /tmp/duck.log", message.channel)
 
     elif content.startswith('!status'):
-        await message.channel.send('I am alive.')
+        await message.channel.send('🦆')
 
     elif content.startswith('!help'):
         await display_help(message)
