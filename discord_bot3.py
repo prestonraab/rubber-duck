@@ -60,7 +60,6 @@ class DuckResponseFlow:
         self.chat_messages = chat_messages
         self.control_channels = control_channels
 
-
     async def __call__(self, user_mention):
         welcome = f'{self.author.mention} What can I do for you?'
 
@@ -122,45 +121,6 @@ class DuckResponseFlow:
         ...
 
 
-    @event
-    async def assign_user_roles(self, user_info):
-        # Get the role name
-        role_name = "NO_ROLE"
-        enrollments = self.course.get_enrollments(user_id=user_info['id'])
-        for enrollment in enrollments:
-            if enrollment.course_section_id:
-                section = self.canvas.get_section(enrollment.course_section_id)
-                print(f"User's section: {section}")
-                role_name = "section-" + str(section.name)
-                break
-        role = discord.utils.get(self.channel.guild.roles, name=role_name)
-        if role is not None:
-            # Get role servername
-            section_name = re.sub(r'[^a-zA-Z0-9\s]', '', role_name).lower()
-            # Replace spaces with hyphens
-            section_name = re.sub(r'\s+', '-', section_name)
-            section_name = re.sub(r'section', '', section_name)
-            guild = self.channel.guild
-            await self.add_role(role, user_info['name'])
-
-            annoucements_channel = discord.utils.get(guild.channels, name='announcements').mention
-            help_channel = discord.utils.get(guild.channels, name='help').mention
-            random_channel = discord.utils.get(guild.channels, name='random').mention
-            section_channel = discord.utils.get(guild.channels, name='section-' + section_name).mention
-            lecture_channel = discord.utils.get(guild.channels, name='lecture-' + section_name).mention
-            await self.display(dedent(f"""
-                                      Authentication code is correct. Welcome to the CS110 discord server!         
-                                      You are in section {section_name}. 
-                                      {annoucements_channel} will have important communications from the Instructors and TAs. Be sure to read all messages there.
-                                      {help_channel} can be a good place to start if you need help.
-                                      {random_channel}  is a place for sharing random stuff - make it fun!
-                                      {section_channel} is for communicating with members of your lab section.
-                                      {lecture_channel} is for communicating with members of your lecture section, as well as receive class-specific information from your instructor.
-                                      """))
-        else:
-            await self.display("Something went wrong. Try again.")
-            await self.display_error("ERROR in assign_user_roles: Role not found -- " + role_name)
-
 
 
 def parse_blocks(text: str, limit=2000):
@@ -193,9 +153,39 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
 
 
 class DuckControlFlow:
-    def __init__(self, message,control_channels: List[discord.TextChannel]):
+    def __init__(self, message, control_channels: List[discord.TextChannel]):
         self.message = message
         self.control_channels = control_channels
+
+    async def __call__(self):
+        await self.control_on_message()
+
+
+    @event
+    async def control_on_message(self):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        """
+        content = self.message.content
+        if content.startswith('!restart'):
+            await self.restart(self.message)
+
+        elif content.startswith('!log'):
+            await self.message.channel.send(file=discord.File('/tmp/duck.log'))
+
+        elif content.startswith('!rmlog'):
+            await self.execute_command("rm /tmp/duck.log", self.message.channel)
+            await self.execute_command("touch /tmp/duck.log", self.message.channel)
+
+        elif content.startswith('!status'):
+            await self.message.channel.send('I am alive.')
+
+        elif content.startswith('!help'):
+            await self.display_help()
+        elif content.startswith('!'):
+            await self.message.channel.send('Unknown command. Try !help')
+
+
 
     @event
     async def display(self, text: str):
@@ -246,30 +236,6 @@ class DuckControlFlow:
         subprocess.Popen(["bash", "restart.sh"])
         return
 
-    async def control_on_message(self, message):
-        """
-        This function is called whenever the bot sees a message in a control channel
-        :param message:
-        :return:
-        """
-        content = message.content
-        if content.startswith('!restart'):
-            await self.restart(message)
-
-        elif content.startswith('!log'):
-            await message.channel.send(file=discord.File('/tmp/duck.log'))
-
-        elif content.startswith('!rmlog'):
-            await self.execute_command("rm /tmp/duck.log", message.channel)
-            await self.execute_command("touch /tmp/duck.log", message.channel)
-
-        elif content.startswith('!status'):
-            await message.channel.send('I am alive.')
-
-        elif content.startswith('!help'):
-            await self.display_help()
-        elif content.startswith('!'):
-            await message.channel.send('Unknown command. Try !help')
 
 
 
