@@ -20,7 +20,7 @@ import openai
 
 
 def load_env():
-    with open('secrets.env') as file:
+    with open('.env') as file:
         for line in file:
             key, value = line.strip().split('=')
             os.environ[key] = value
