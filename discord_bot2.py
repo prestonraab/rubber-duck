@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 import argparse
-from typing import TypedDict
+from typing import TypedDict, Union
 
 from discord import ChannelType
 
@@ -84,15 +84,15 @@ async def execute_command(text, channel):
     """
     # Run command using shell and pipe output to channel
     work_dir = Path(__file__).parent
-    await send_in_channel(channel, f"```ps\n$ {text}```")
+    await send(channel, f"```ps\n$ {text}```")
     process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
     # Get output of command and send to channel
     errors = process.stderr.decode('utf-8')
     if errors:
-        await send_in_channel(channel, f'Errors: ```{errors}```')
+        await send(channel, f'Errors: ```{errors}```')
     output = process.stdout.decode('utf-8')
     if output:
-        await send_in_channel(channel, f'```{output}```')
+        await send(channel, f'```{output}```')
     return
 
 
@@ -185,14 +185,11 @@ def parse_blocks(text: str, limit=2000):
         yield block
 
 
-async def send(thread: discord.Thread, text: str):
+async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
     for block in parse_blocks(text):
         await thread.send(block)
 
 
-async def send_in_channel(channel: discord.TextChannel, text: str):
-    for block in parse_blocks(text):
-        await channel.send(block)
 
 
 async def continue_conversation(
@@ -289,10 +286,8 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
-        channels = self.get_all_channels()
-        for channel in channels:
-            if channel.name == 'control-duck':
-                await channel.send('Duck online')
+        for channel in self.control_channels:
+            await channel.send('Duck online')
 
     async def on_message(self, message: discord.Message):
         """
@@ -310,11 +305,8 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
-        if message.channel.id in self.control_channels:
+        if message.channel.id in self.control_channel_ids:
             await control_on_message(message)
-            return
-        elif message.channel.name == 'control-duck':
-            await send_in_channel(message.channel, f'Channel id: {message.channel.id}')
             return
 
         # if the message is in a listen channel, create a thread
@@ -365,7 +357,8 @@ class MyClient(discord.Client):
     def _load_control_channels(self):
         with open('config.json') as file:
             config = json.load(file)
-        self.control_channels = config['control_channels']
+        self.control_channel_ids = config['control_channels']
+        self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
 
