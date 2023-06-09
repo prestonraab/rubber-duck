@@ -2,12 +2,13 @@ import json
 import os
 import logging
 import signal
-from dataclasses import dataclass, asdict
+import subprocess
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 import argparse
-from typing import TypedDict
+from typing import TypedDict, Union
 
 from discord import ChannelType
 
@@ -67,6 +68,149 @@ class Conversation:
         return Conversation(**jobj)
 
 
+async def display_help(message):
+    await message.channel.send(
+        "!restart - restart the bot\n"
+        "!log - print the log file\n"
+        "!rmlog - remove the log file\n"
+        "!status - print a status message\n"
+        "!help - print this message\n"
+    )
+
+
+async def execute_command(text, channel):
+    """
+    Execute a command in the shell and return the output to the channel
+    """
+    # Run command using shell and pipe output to channel
+    work_dir = Path(__file__).parent
+    await send(channel, f"```ps\n$ {text}```")
+    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
+    # Get output of command and send to channel
+    errors = process.stderr.decode('utf-8')
+    if errors:
+        await send(channel, f'Errors: ```{errors}```')
+    output = process.stdout.decode('utf-8')
+    if output:
+        await send(channel, f'```{output}```')
+    return
+
+
+async def restart(message):
+    """
+    Restart the bot
+    :param message: The message that triggered the restart
+    """
+    await message.channel.send(f'Restart requested.')
+    await execute_command('git fetch', message.channel)
+    await execute_command('git reset --hard', message.channel)
+    await execute_command('git clean -f', message.channel)
+    await execute_command('git pull --rebase=false', message.channel)
+    await execute_command('poetry install', message.channel)
+    await message.channel.send(f'Restarting.')
+    subprocess.Popen(["bash", "restart.sh"])
+    return
+
+
+async def control_on_message(message):
+    """
+    This function is called whenever the bot sees a message in a control channel
+    :param message:
+    :return:
+    """
+    content = message.content
+    if content.startswith('!restart'):
+        await restart(message)
+
+    elif content.startswith('!log'):
+        await message.channel.send(file=discord.File('/tmp/duck.log'))
+
+    elif content.startswith('!rmlog'):
+        await execute_command("rm /tmp/duck.log", message.channel)
+        await execute_command("touch /tmp/duck.log", message.channel)
+
+    elif content.startswith('!status'):
+        await message.channel.send('I am alive.')
+
+    elif content.startswith('!help'):
+        await display_help(message)
+    elif content.startswith('!'):
+        await message.channel.send('Unknown command. Try !help')
+
+
+async def query(conversation: Conversation, message_text: str):
+    """
+    Query the OPENAI API
+    """
+    logging.debug(f"User said: {message_text}")
+
+    conversation.messages.append(dict(role='user', content=message_text))
+
+    completion = await openai.ChatCompletion.acreate(
+        model=AI_ENGINE,
+        messages=conversation.messages
+    )
+    logging.debug(f"Completion: {completion}")
+
+    response_message = completion.choices[0]['message']
+    response = response_message['content'].strip()
+    logging.debug(f"Response: {response}")
+
+    conversation.messages.append(response_message)
+
+    return response
+
+
+def parse_blocks(text: str, limit=2000):
+    tick = '`'
+    block = ""
+    current_fence = ""
+    for line in text.splitlines():
+        if len(block) + len(line) > limit - 3:
+            if block:
+                if current_fence:
+                    block += '```'
+                yield block
+                block = current_fence
+
+        block += ('\n' + line) if block else line
+
+        if line.strip().startswith(tick * 3):
+            if current_fence:
+                current_fence = ""
+            else:
+                current_fence = line
+
+    if block:
+        yield block
+
+
+async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
+    for block in parse_blocks(text):
+        await thread.send(block)
+
+
+
+
+async def continue_conversation(
+        conversation: Conversation, message_text: str):
+    """
+    Use the OPNENAI API to continue the conversation
+    """
+    thread = conversation.thread
+
+    # while the bot is waiting on a response from the model
+    # set its status as typing for user-friendliness
+    async with thread.typing():
+        response = await query(conversation, message_text)
+
+        if not response:
+            response = 'RubberDuck encountered an error.'
+
+        # send the model's response to the Discord channel
+        await send(thread, response)
+
+
 class MyClient(discord.Client):
     def __init__(self, prompt_dir: Path, conversation_dir: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
@@ -75,6 +219,7 @@ class MyClient(discord.Client):
         super().__init__(intents=intents)
 
         self._load_prompts(prompt_dir)
+        self._load_control_channels()
         self.conversation_dir = conversation_dir
         self.conversations = {}
         self.guild_dict = {}  # Loaded in on_ready
@@ -126,28 +271,6 @@ class MyClient(discord.Client):
         except Exception as ex:
             logging.exception(f"Unable to load conversation: {filename}")
 
-    async def query(self, conversation: Conversation, message_text: str):
-        """
-        Query the OPENAI API
-        """
-        logging.debug(f"User said: {message_text}")
-
-        conversation.messages.append(dict(role='user', content=message_text))
-
-        completion = await openai.ChatCompletion.acreate(
-            model=AI_ENGINE,
-            messages=conversation.messages
-        )
-        logging.debug(f"Completion: {completion}")
-
-        response_message = completion.choices[0]['message']
-        response = response_message['content'].strip()
-        logging.debug(f"Response: {response}")
-
-        conversation.messages.append(response_message)
-
-        return response
-
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
 
@@ -163,8 +286,10 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
+        for channel in self.control_channels:
+            await channel.send('Duck online')
 
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """
         This function is called whenever the bot sees a message in a channel
         If the message is in a listen channel
@@ -180,14 +305,17 @@ class MyClient(discord.Client):
         if message.content.startswith('//'):
             return
 
+        if message.channel.id in self.control_channel_ids:
+            await control_on_message(message)
+            return
+
         # if the message is in a listen channel, create a thread
         if message.channel.name in self.prompts:
-            prefix = self.prompts[message.channel.name]
-            await self.create_conversation(prefix, message)
+            await self.create_conversation(self.prompts[message.channel.name], message)
 
         # if the message is in an active thread, continue the conversation
         elif message.channel.id in self.conversations:
-            await self.continue_conversation(
+            await continue_conversation(
                 self.conversations[message.channel.id], message.content)
 
         # otherwise, ignore the message
@@ -226,50 +354,12 @@ class MyClient(discord.Client):
         async with thread.typing():
             await thread.send(welcome)
 
-    def parse_blocks(self, text: str, limit=2000):
-        tick = '`'
-        block = ""
-        current_fence = ""
-        for line in text.splitlines():
-            if len(block) + len(line) > limit - 3:
-                if block:
-                    if current_fence:
-                        block += '```'
-                    yield block
-                    block = current_fence
+    def _load_control_channels(self):
+        with open('config.json') as file:
+            config = json.load(file)
+        self.control_channel_ids = config['control_channels']
+        self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
-            block += ('\n' + line) if block else line
-
-            if line.strip().startswith(tick * 3):
-                if current_fence:
-                    current_fence = ""
-                else:
-                    current_fence = line
-
-        if block:
-            yield block
-
-    async def send(self, thread: discord.Thread, text: str):
-        for block in self.parse_blocks(text):
-            await thread.send(block)
-
-    async def continue_conversation(
-            self, conversation: Conversation, message_text: str):
-        """
-        Use the OPNENAI API to continue the conversation
-        """
-        thread = conversation.thread
-
-        # while the bot is waiting on a response from the model
-        # set its status as typing for user-friendliness
-        async with thread.typing():
-            response = await self.query(conversation, message_text)
-
-            if not response:
-                response = 'RubberDuck encountered an error.'
-
-            # send the model's response to the Discord channel
-            await self.send(thread, response)
 
 
 def main(prompts: Path, conversations: Path):
