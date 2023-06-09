@@ -20,7 +20,7 @@ import openai
 import argparse
 import shutil
 
-from typing import Callable, TypedDict, Union
+from typing import Callable, TypedDict, Union, List
 
 from quest import event, signal, WorkflowManager
 from quest import event, signal as quest_signal
@@ -53,61 +53,74 @@ class GPTMessage(TypedDict):
 
 
 class DuckResponseFlow:
-    def __init__(self, channel: discord.Thread, messages: list[GPTMessage],
+    def __init__(self, thread: discord.Thread, author, chat_messages: list[GPTMessage],
                  control_channels: list[discord.TextChannel]):
-        self.channel = channel
-        self.messages = messages
+        self.thread = thread
+        self.author = author
+        self.chat_messages = chat_messages
         self.control_channels = control_channels
+
+
+    async def __call__(self, user_mention):
+        welcome = f'{self.author.mention} What can I do for you?'
+
+        async with self.thread.typing():
+            await self.thread.send(welcome)
 
     @event
     async def display(self, text: str):
-        await self.channel.send(text)
+        await self.thread.send(text)
 
     @event
     async def display_control(self, text: str):
         for channel in self.control_channels:
             await channel.send(text)
 
-    @event
-    async def add_role(self, role, name):
-        user = None
-        for member in self.channel.guild.members:
-            if member.name.lower() == self.channel.name.lower():
-                user = member
-                break
-        await user.add_roles(role)
-        await user.edit(nick=name)
 
     @event
-    async def get_uuid(self):
-        return str(randint(1000000, 9999999))
+    async def respond(self, message_text: str):
 
-    @event
-    async def create_text_channel(self, channel, channel_name):
-        await channel.guild.create_text_channel(channel_name)
+        """
+        Use the OPNENAI API to continue the conversation
+        """
+        # while the bot is waiting on a response from the model
+        # set its status as typing for user-friendliness
+        async with self.thread.typing():
+            response = await self.query(self.chat_messages, message_text)
 
-    @event
-    async def get_user_info(self, sid):
-        user = self.canvas.get_user(str(sid), 'sis_login_id')
-        email = user.get_profile().get('primary_email')
-        return {"email": str(email), "id": str(user.id), "name": str(user.short_name)}
+            if not response:
+                response = 'RubberDuck encountered an error.'
+
+            # send the model's response to the Discord channel
+            await send(self.thread, response)
+
+    @signal
+    async def query(self, message_text: str):
+        """
+        Query the OPENAI API
+        """
+        logging.debug(f"User said: {message_text}")
+
+        self.chat_messages.append(dict(role='user', content=message_text))
+
+        completion = await openai.ChatCompletion.acreate(
+            model=AI_ENGINE,
+            messages=self.chat_messages
+        )
+        logging.debug(f"Completion: {completion}")
+
+        response_message = completion.choices[0]['message']
+        response = response_message['content'].strip()
+        logging.debug(f"Response: {response}")
+
+        self.chat_messages.append(response_message)
+
+        return response
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
         ...
 
-    async def get_student_id(self):
-        await self.display('Please enter your BYU NetID: ')
-        return await self.get_input()
-
-    async def __call__(self, user_mention):
-        await self.display(f'Hello {user_mention}')
-        # name = self.get_name()
-        sid = await self.get_student_id()
-        user_info = await self.get_user_from_canvas(sid)
-        if user_info is not None:
-            if await self.authenticate_user(user_info):
-                await self.assign_user_roles(user_info)
 
     @event
     async def assign_user_roles(self, user_info):
@@ -148,27 +161,6 @@ class DuckResponseFlow:
             await self.display("Something went wrong. Try again.")
             await self.display_error("ERROR in assign_user_roles: Role not found -- " + role_name)
 
-        async def query(conversation: Conversation, message_text: str):
-            """
-            Query the OPENAI API
-            """
-            logging.debug(f"User said: {message_text}")
-
-            conversation.messages.append(dict(role='user', content=message_text))
-
-            completion = await openai.ChatCompletion.acreate(
-                model=AI_ENGINE,
-                messages=conversation.messages
-            )
-            logging.debug(f"Completion: {completion}")
-
-            response_message = completion.choices[0]['message']
-            response = response_message['content'].strip()
-            logging.debug(f"Response: {response}")
-
-            conversation.messages.append(response_message)
-
-            return response
 
 
 def parse_blocks(text: str, limit=2000):
@@ -195,9 +187,23 @@ def parse_blocks(text: str, limit=2000):
         yield block
 
 
+async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
+    for block in parse_blocks(text):
+        await thread.send(block)
+
+
 class DuckControlFlow:
+    def __init__(self, message,control_channels: List[discord.TextChannel]):
+        self.message = message
+        self.control_channels = control_channels
+
     @event
-    async def display_help(self, message):
+    async def display(self, text: str):
+        for channel in self.control_channels:
+            await send(channel, text)
+
+    @event
+    async def display_help(self):
         await self.display(
             "!restart - restart the bot\n"
             "!log - print the log file\n"
@@ -213,34 +219,34 @@ class DuckControlFlow:
         """
         # Run command using shell and pipe output to channel
         work_dir = Path(__file__).parent
-        await self.send(channel, f"```ps\n$ {text}```")
+        await self.display(f"```ps\n$ {text}```")
         process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
         # Get output of command and send to channel
         errors = process.stderr.decode('utf-8')
         if errors:
-            await self.send(channel, f'Errors: ```{errors}```')
+            await self.display(f'Errors: ```{errors}```')
         output = process.stdout.decode('utf-8')
         if output:
-            await send(channel, f'```{output}```')
+            await self.display(channel, f'```{output}```')
         return
 
-    async def restart(message):
+    async def restart(self, message):
         """
         Restart the bot
         :param message: The message that triggered the restart
         """
         await message.channel.send(f'Restart requested.')
         os.chdir(Path(__file__).parent)
-        await execute_command('git fetch', message.channel)
-        await execute_command('git reset --hard', message.channel)
-        await execute_command('git clean -f', message.channel)
-        await execute_command('git pull --rebase=false', message.channel)
-        await execute_command('poetry install', message.channel)
+        await self.execute_command('git fetch', message.channel)
+        await self.execute_command('git reset --hard', message.channel)
+        await self.execute_command('git clean -f', message.channel)
+        await self.execute_command('git pull --rebase=false', message.channel)
+        await self.execute_command('poetry install', message.channel)
         await message.channel.send(f'Restarting.')
         subprocess.Popen(["bash", "restart.sh"])
         return
 
-    async def control_on_message(message):
+    async def control_on_message(self, message):
         """
         This function is called whenever the bot sees a message in a control channel
         :param message:
@@ -248,26 +254,23 @@ class DuckControlFlow:
         """
         content = message.content
         if content.startswith('!restart'):
-            await restart(message)
+            await self.restart(message)
 
         elif content.startswith('!log'):
             await message.channel.send(file=discord.File('/tmp/duck.log'))
 
         elif content.startswith('!rmlog'):
-            await execute_command("rm /tmp/duck.log", message.channel)
-            await execute_command("touch /tmp/duck.log", message.channel)
+            await self.execute_command("rm /tmp/duck.log", message.channel)
+            await self.execute_command("touch /tmp/duck.log", message.channel)
 
         elif content.startswith('!status'):
             await message.channel.send('I am alive.')
 
         elif content.startswith('!help'):
-            await display_help(message)
+            await self.display_help()
         elif content.startswith('!'):
             await message.channel.send('Unknown command. Try !help')
 
-    async def send(self, thread: Union[discord.Thread, discord.TextChannel], text: str):
-        for block in parse_blocks(text):
-            await thread.send(block)
 
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
@@ -363,7 +366,7 @@ class MyClient(discord.Client):
             return
 
         if message.channel.id in self.control_channel_ids:
-            await control_on_message(message)
+            await self._control_duck(message)
             return
 
         # if the message is in a listen channel, create a thread
@@ -378,6 +381,12 @@ class MyClient(discord.Client):
         else:
             return
 
+    # Start new DuckControlFlow
+    # Maybe we don't need to start a workflow for this?
+    async def _control_duck(self, message: discord.Message):
+        await self.workflow_manager.start_async_workflow(str(message.channel.id),
+                                                         DuckControlFlow(message, self.control_channels))
+
     async def _create_conversation(self, prefix, message: discord.Message):
         # Create a private thread in the message channel
         thread = await message.channel.create_thread(
@@ -389,7 +398,8 @@ class MyClient(discord.Client):
             dict(role='system', content=prefix or message.content)
         ]
         # start new register user workflow
-        await self.workflow_manager.start_async_workflow(str(thread.id), DuckResponseFlow(thread, messages),
+        await self.workflow_manager.start_async_workflow(str(thread.id),
+                                                         DuckResponseFlow(thread, message.author, messages, self.control_channels),
                                                          str(message.author.mention))
         # TODO::Should we handle messages that finish out of the gate?
 
