@@ -53,21 +53,20 @@ class GPTMessage(TypedDict):
 
 
 class DuckResponseFlow:
-    def __init__(self, channel: discord.Thread):
+    def __init__(self, channel: discord.Thread, messages: list[GPTMessage],
+                 control_channels: list[discord.TextChannel]):
         self.channel = channel
-        # initialize error channel
-        channel_name = "registration-bot-log"
-        self.error_channel = discord.utils.get(channel.guild.channels, name=channel_name)
-        if self.error_channel is None:
-            self.error_channel = self.create_text_channel(self.channel, channel_name)
+        self.messages = messages
+        self.control_channels = control_channels
 
     @event
     async def display(self, text: str):
         await self.channel.send(text)
 
     @event
-    async def display_error(self, text: str):
-        await self.error_channel.send(text)
+    async def display_control(self, text: str):
+        for channel in self.control_channels:
+            await channel.send(text)
 
     @event
     async def add_role(self, role, name):
@@ -149,19 +148,126 @@ class DuckResponseFlow:
             await self.display("Something went wrong. Try again.")
             await self.display_error("ERROR in assign_user_roles: Role not found -- " + role_name)
 
+        async def query(conversation: Conversation, message_text: str):
+            """
+            Query the OPENAI API
+            """
+            logging.debug(f"User said: {message_text}")
+
+            conversation.messages.append(dict(role='user', content=message_text))
+
+            completion = await openai.ChatCompletion.acreate(
+                model=AI_ENGINE,
+                messages=conversation.messages
+            )
+            logging.debug(f"Completion: {completion}")
+
+            response_message = completion.choices[0]['message']
+            response = response_message['content'].strip()
+            logging.debug(f"Response: {response}")
+
+            conversation.messages.append(response_message)
+
+            return response
+
+
+def parse_blocks(text: str, limit=2000):
+    tick = '`'
+    block = ""
+    current_fence = ""
+    for line in text.splitlines():
+        if len(block) + len(line) > limit - 3:
+            if block:
+                if current_fence:
+                    block += '```'
+                yield block
+                block = current_fence
+
+        block += ('\n' + line) if block else line
+
+        if line.strip().startswith(tick * 3):
+            if current_fence:
+                current_fence = ""
+            else:
+                current_fence = line
+
+    if block:
+        yield block
+
+
+class DuckControlFlow:
     @event
-    async def get_user_from_canvas(self, sid):
-        try:
-            user_info = await self.get_user_info(sid)
-            # self.display("Canvas user authenticated")
-            return user_info
-        except canvas_exception.ResourceDoesNotExist as e:
-            await self.display("Canvas user does not exist. Try again.")
-            await self.display_error("Canvas user not found with sid: " + str(sid))
-        except Exception as e:
-            await self.display("Something went wrong. Try again.")
-            await self.display_error("EXCEPTION in getting user from Canvas: " + str(e))
-        return None
+    async def display_help(self, message):
+        await self.display(
+            "!restart - restart the bot\n"
+            "!log - print the log file\n"
+            "!rmlog - remove the log file\n"
+            "!status - print a status message\n"
+            "!help - print this message\n"
+        )
+
+    @event
+    async def execute_command(self, text, channel):
+        """
+        Execute a command in the shell and return the output to the channel
+        """
+        # Run command using shell and pipe output to channel
+        work_dir = Path(__file__).parent
+        await self.send(channel, f"```ps\n$ {text}```")
+        process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
+        # Get output of command and send to channel
+        errors = process.stderr.decode('utf-8')
+        if errors:
+            await self.send(channel, f'Errors: ```{errors}```')
+        output = process.stdout.decode('utf-8')
+        if output:
+            await send(channel, f'```{output}```')
+        return
+
+    async def restart(message):
+        """
+        Restart the bot
+        :param message: The message that triggered the restart
+        """
+        await message.channel.send(f'Restart requested.')
+        os.chdir(Path(__file__).parent)
+        await execute_command('git fetch', message.channel)
+        await execute_command('git reset --hard', message.channel)
+        await execute_command('git clean -f', message.channel)
+        await execute_command('git pull --rebase=false', message.channel)
+        await execute_command('poetry install', message.channel)
+        await message.channel.send(f'Restarting.')
+        subprocess.Popen(["bash", "restart.sh"])
+        return
+
+    async def control_on_message(message):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        :param message:
+        :return:
+        """
+        content = message.content
+        if content.startswith('!restart'):
+            await restart(message)
+
+        elif content.startswith('!log'):
+            await message.channel.send(file=discord.File('/tmp/duck.log'))
+
+        elif content.startswith('!rmlog'):
+            await execute_command("rm /tmp/duck.log", message.channel)
+            await execute_command("touch /tmp/duck.log", message.channel)
+
+        elif content.startswith('!status'):
+            await message.channel.send('I am alive.')
+
+        elif content.startswith('!help'):
+            await display_help(message)
+        elif content.startswith('!'):
+            await message.channel.send('Unknown command. Try !help')
+
+    async def send(self, thread: Union[discord.Thread, discord.TextChannel], text: str):
+        for block in parse_blocks(text):
+            await thread.send(block)
 
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
@@ -191,138 +297,14 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         return thread
 
 
-async def display_help(message):
-    await message.channel.send(
-        "!restart - restart the bot\n"
-        "!log - print the log file\n"
-        "!rmlog - remove the log file\n"
-        "!status - print a status message\n"
-        "!help - print this message\n"
-    )
-
-
-async def execute_command(text, channel):
-    """
-    Execute a command in the shell and return the output to the channel
-    """
-    # Run command using shell and pipe output to channel
-    work_dir = Path(__file__).parent
-    await send(channel, f"```ps\n$ {text}```")
-    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
-    # Get output of command and send to channel
-    errors = process.stderr.decode('utf-8')
-    if errors:
-        await send(channel, f'Errors: ```{errors}```')
-    output = process.stdout.decode('utf-8')
-    if output:
-        await send(channel, f'```{output}```')
-    return
-
-
-async def restart(message):
-    """
-    Restart the bot
-    :param message: The message that triggered the restart
-    """
-    await message.channel.send(f'Restart requested.')
-    os.chdir(Path(__file__).parent)
-    await execute_command('git fetch', message.channel)
-    await execute_command('git reset --hard', message.channel)
-    await execute_command('git clean -f', message.channel)
-    await execute_command('git pull --rebase=false', message.channel)
-    await execute_command('poetry install', message.channel)
-    await message.channel.send(f'Restarting.')
-    subprocess.Popen(["bash", "restart.sh"])
-    return
-
-
-async def control_on_message(message):
-    """
-    This function is called whenever the bot sees a message in a control channel
-    :param message:
-    :return:
-    """
-    content = message.content
-    if content.startswith('!restart'):
-        await restart(message)
-
-    elif content.startswith('!log'):
-        await message.channel.send(file=discord.File('/tmp/duck.log'))
-
-    elif content.startswith('!rmlog'):
-        await execute_command("rm /tmp/duck.log", message.channel)
-        await execute_command("touch /tmp/duck.log", message.channel)
-
-    elif content.startswith('!status'):
-        await message.channel.send('I am alive.')
-
-    elif content.startswith('!help'):
-        await display_help(message)
-    elif content.startswith('!'):
-        await message.channel.send('Unknown command. Try !help')
-
-
-async def query(conversation: Conversation, message_text: str):
-    """
-    Query the OPENAI API
-    """
-    logging.debug(f"User said: {message_text}")
-
-    conversation.messages.append(dict(role='user', content=message_text))
-
-    completion = await openai.ChatCompletion.acreate(
-        model=AI_ENGINE,
-        messages=conversation.messages
-    )
-    logging.debug(f"Completion: {completion}")
-
-    response_message = completion.choices[0]['message']
-    response = response_message['content'].strip()
-    logging.debug(f"Response: {response}")
-
-    conversation.messages.append(response_message)
-
-    return response
-
-
-def parse_blocks(text: str, limit=2000):
-    tick = '`'
-    block = ""
-    current_fence = ""
-    for line in text.splitlines():
-        if len(block) + len(line) > limit - 3:
-            if block:
-                if current_fence:
-                    block += '```'
-                yield block
-                block = current_fence
-
-        block += ('\n' + line) if block else line
-
-        if line.strip().startswith(tick * 3):
-            if current_fence:
-                current_fence = ""
-            else:
-                current_fence = line
-
-    if block:
-        yield block
-
-
-async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
-    for block in parse_blocks(text):
-        await thread.send(block)
-
-
 class MyClient(discord.Client):
-    def __init__(self, prompt_dir: Path, channels):
+    def __init__(self, prompt_dir: Path, log_file: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
         intents.members = True
         super().__init__(intents=intents)
 
-        self.channels = channels
         self.workflow_manager = None
 
         self._load_prompts(prompt_dir)
@@ -385,8 +367,8 @@ class MyClient(discord.Client):
             return
 
         # if the message is in a listen channel, create a thread
-        if message.channel.name in self.channels:
-            await self._create_conversation(message)
+        if message.channel.name in self.prompts:
+            await self._create_conversation(self.prompts[message.channel.name], message)
 
         # if the message is in an active thread, continue the conversation
         elif self.workflow_manager.has_workflow(str(message.channel.id)):
@@ -396,14 +378,18 @@ class MyClient(discord.Client):
         else:
             return
 
-    async def _create_conversation(self, message: discord.Message):
+    async def _create_conversation(self, prefix, message: discord.Message):
         # Create a private thread in the message channel
         thread = await message.channel.create_thread(
             name=message.author.name,
             auto_archive_duration=60
         )
+
+        messages = [
+            dict(role='system', content=prefix or message.content)
+        ]
         # start new register user workflow
-        await self.workflow_manager.start_async_workflow(str(thread.id), DuckResponseFlow(thread),
+        await self.workflow_manager.start_async_workflow(str(thread.id), DuckResponseFlow(thread, messages),
                                                          str(message.author.mention))
         # TODO::Should we handle messages that finish out of the gate?
 
@@ -423,44 +409,27 @@ class MyClient(discord.Client):
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
-def main(prompts: Path, conversations: Path):
-    with MyClient(prompts, conversations) as client:
-        client.run(os.environ['DISCORD_TOKEN'])
-
+def main(prompts: Path, log_file: Path):
+    # create client
+    client = MyClient(prompts, log_file)
+    # set path for saved state and init workflow manager
     saved_state = Path('saved-state')
-
-    # Remove data
-    shutil.rmtree(saved_state, ignore_errors=True)
-
+    saved_state.mkdir(exist_ok=True, parents=True)
     workflow_manager = WorkflowManager(
         JsonMetadataSerializer(saved_state),
-        JsonEventSerializer(saved_state / 'workflow_state'),
-        {'RegisterUserFlow': StatelessWorkflowSerializer(DuckResponseFlow)}
+        JsonEventSerializer(saved_state),
+        {'DuckResponseFlow': DiscordWorkflowSerializer(DuckResponseFlow, client, saved_state)}
     )
-
-    workflow_id = str(uuid.uuid4())
-
-    async with workflow_manager:
-        result = await workflow_manager.start_async_workflow(workflow_id, DuckResponseFlow(), 'Howdy')
-        assert result is not None
-        assert result.status == Status.AWAITING_SIGNAL
-
-        print('---')
-        result = await workflow_manager.signal_async_workflow(workflow_id, INPUT_EVENT_NAME, "Foo")
-        assert result is not None
-        assert result.status == Status.AWAITING_SIGNAL
-
-    async with workflow_manager:
-        print('---')
-        result = await workflow_manager.signal_async_workflow(workflow_id, INPUT_EVENT_NAME, '123')
-        print('---')
-        assert result is not None
-        assert result.status == Status.COMPLETED
-        print(json.dumps(workflow_manager.workflows[workflow_id]._events._state, indent=2))
+    # give the workflow manager to the client
+    client.set_workflow_manager(workflow_manager)
+    # run the client
+    with client:
+        client.run(os.getenv('DISCORD_TOKEN'))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prompts', type=Path, default='prompts')
+    parser.add_argument('--log-file', type=Path, default='/tmp/duck.log')
     args = parser.parse_args()
-    asyncio.run(main(args.prompts))
+    main(args.prompts, args.log_file)
