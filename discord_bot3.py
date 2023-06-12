@@ -52,7 +52,7 @@ class DuckResponseFlow:
         self.control_channels = control_channels
         welcome = f"This function received these arguments: {message.content}" \
                   f"{chat_messages}" \
-                    f"{control_channels}"
+                  f"{control_channels}"
         async with self.thread.typing():
             await self.thread.send(welcome)
 
@@ -60,8 +60,7 @@ class DuckResponseFlow:
         await self.display("You said: " + user_response)
 
         user_response2 = await self.get_first_response()
-        await self.display("You said: " + user_response2)
-
+        await self.display("You said2: " + user_response2)
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
@@ -115,7 +114,6 @@ class DuckResponseFlow:
         self.chat_messages.append(response_message)
 
         return response
-
 
 
 def parse_blocks(text: str, limit=2000):
@@ -324,7 +322,6 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
-
 
     async def _create_conversation(self, prefix, message: discord.Message):
         # Create a private thread in the message channel
