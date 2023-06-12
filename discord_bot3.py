@@ -44,23 +44,21 @@ class DuckResponseFlow:
     def __init__(self, thread: discord.Thread):
         self.thread = thread
 
-    async def get_first_response(self):
-        await self.display('Please enter a response: ')
+    async def get_response(self, prompt: str):
+        await self.display(prompt)
         return await self.get_input()
 
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
-        welcome = f"This function received these arguments: {message.content}" \
-                  f"{chat_messages}" \
-                  f"{control_channels}"
+        welcome = f"This happens whenever you send a message: {message.content}"
         async with self.thread.typing():
             await self.thread.send(welcome)
 
-        user_response = await self.get_first_response()
-        await self.display("You said: " + user_response)
+        user_response = await self.get_response('Please enter a first response: ')
+        await self.display("You said first: " + user_response)
 
-        user_response2 = await self.get_first_response()
-        await self.display("You said2: " + user_response2)
+        user_response2 = await self.get_response('Please enter a second response: ')
+        await self.display("You said second: " + user_response2)
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
