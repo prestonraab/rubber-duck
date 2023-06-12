@@ -48,11 +48,18 @@ class DuckResponseFlow:
         await self.display(prompt)
         return await self.get_input()
 
+    @event
+    async def display(self, text: str):
+        await send(self.thread, text)
+
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
+
+        # Happening multiple times
         welcome = f"This happens whenever you send a message: {message.content}"
         async with self.thread.typing():
             await self.thread.send(welcome)
+
 
         user_response = await self.get_response('Please enter a first response: ')
         await self.display("You said first: " + user_response)
@@ -60,13 +67,12 @@ class DuckResponseFlow:
         user_response2 = await self.get_response('Please enter a second response: ')
         await self.display("You said second: " + user_response2)
 
+        await self.thread.send("Exiting function")
+
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
         ...
 
-    @event
-    async def display(self, text: str):
-        await send(self.thread, text)
 
     @event
     async def display_control(self, text: str):
