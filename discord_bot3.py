@@ -53,7 +53,7 @@ class DuckResponseFlow:
             async with self.thread.typing():
                 await self.thread.send(welcome)
         else:
-            message = f'Hey, your computer woke up again'
+            message = f'Hey, your computer woke up again, and you said "{message.content}".'
 
             async with self.thread.typing():
                 await self.thread.send(message)
