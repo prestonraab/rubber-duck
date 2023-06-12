@@ -56,10 +56,10 @@ class DuckResponseFlow:
         async with self.thread.typing():
             await self.thread.send(welcome)
 
-        user_response = str(self.get_first_response())
+        user_response = await self.get_first_response()
         await self.display("You said: " + user_response)
 
-        user_response2 = str(self.get_first_response())
+        user_response2 = await self.get_first_response()
         await self.display("You said: " + user_response2)
 
 
