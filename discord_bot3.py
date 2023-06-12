@@ -43,7 +43,6 @@ class GPTMessage(TypedDict):
 class DuckResponseFlow:
     def __init__(self, thread: discord.Thread):
         self.thread = thread
-        self.starting = True
 
     async def get_first_response(self):
         await self.display('Please enter a response: ')
@@ -51,18 +50,12 @@ class DuckResponseFlow:
 
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
-        if self.starting:
-            self.starting = False
-            welcome = f'{message.author.user_mention} What can I do for you?'
-            async with self.thread.typing():
-                await self.thread.send(welcome)
-        else:
-            message = f"This function received these arguments: {message.content}" \
-                      f"{chat_messages}" \
-                        f"{control_channels}"
+        welcome = f"This function received these arguments: {message.content}" \
+                  f"{chat_messages}" \
+                    f"{control_channels}"
+        async with self.thread.typing():
+            await self.thread.send(welcome)
 
-            async with self.thread.typing():
-                await self.display(message)
         user_response = str(self.get_first_response())
         await self.display("You said: " + user_response)
 
