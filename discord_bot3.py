@@ -45,6 +45,10 @@ class DuckResponseFlow:
         self.thread = thread
         self.starting = True
 
+    async def get_first_response(self):
+        await self.display('Please enter a response: ')
+        return await self.get_input()
+
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
         if self.starting:
@@ -59,7 +63,7 @@ class DuckResponseFlow:
 
             async with self.thread.typing():
                 await self.display(message)
-        user_response = self.get_input()
+        user_response = str(self.get_first_response())
         await self.display("You said: " + user_response)
 
 
