@@ -53,10 +53,18 @@ class DuckResponseFlow:
             async with self.thread.typing():
                 await self.thread.send(welcome)
         else:
-            message = f'Hey, your computer woke up again, and you said "{message.content}".'
+            message = f'This function received these arguments: ' \
+                      f'{message.content} ' \
+                        f'{"".join(map(str, chat_messages))} ' \
+                        f'{control_channels}'
 
             async with self.thread.typing():
                 await self.thread.send(message)
+
+
+    @quest_signal(INPUT_EVENT_NAME)
+    def get_input(self):
+        ...
 
     @event
     async def display(self, text: str):
@@ -107,9 +115,6 @@ class DuckResponseFlow:
 
         return response
 
-    @quest_signal(INPUT_EVENT_NAME)
-    def get_input(self):
-        ...
 
 
 def parse_blocks(text: str, limit=2000):
@@ -334,7 +339,6 @@ class MyClient(discord.Client):
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
             DuckResponseFlow(thread),
-            message,
             messages,
             self.control_channels)
         # TODO::Should we handle messages that finish out of the gate?
