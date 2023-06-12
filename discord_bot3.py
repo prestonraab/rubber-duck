@@ -46,15 +46,19 @@ class DuckResponseFlow:
         self.author = author
         self.chat_messages = chat_messages
         self.control_channels = control_channels
-        welcome = f'{self.author.mention} What can I do for you?'
-        async with self.thread.typing():
-            await self.thread.send(welcome)
+        self.starting = True
 
     async def __call__(self, user_mention):
-        welcome = f'Hey, your computer woke up again'
+        if self.starting:
+            self.starting = False
+            welcome = f'{self.author.mention} What can I do for you?'
+            async with self.thread.typing():
+                await self.thread.send(welcome)
+        else:
+            message = f'Hey, your computer woke up again'
 
-        async with self.thread.typing():
-            await self.thread.send(welcome)
+            async with self.thread.typing():
+                await self.thread.send(message)
 
     @event
     async def display(self, text: str):
