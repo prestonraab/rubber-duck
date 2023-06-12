@@ -336,6 +336,7 @@ class MyClient(discord.Client):
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
             DuckResponseFlow(thread),
+            message,
             messages,
             self.control_channels)
         # TODO::Should we handle messages that finish out of the gate?
