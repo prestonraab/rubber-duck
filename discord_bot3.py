@@ -381,7 +381,10 @@ def main(prompts: Path, log_file: Path):
     workflow_manager = WorkflowManager(
         JsonMetadataSerializer(saved_state),
         JsonEventSerializer(saved_state),
-        {'DuckResponseFlow': DiscordWorkflowSerializer(DuckResponseFlow, client, saved_state)}
+        {
+            'DuckResponseFlow': DiscordWorkflowSerializer(DuckResponseFlow, client, saved_state),
+            'DuckControlFlow': DiscordWorkflowSerializer(DuckControlFlow, client, saved_state)
+        }
     )
     # give the workflow manager to the client
     client.set_workflow_manager(workflow_manager)
