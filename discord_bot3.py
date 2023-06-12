@@ -143,86 +143,74 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
         await thread.send(block)
 
 
-class DuckControlFlow:
-    def __init__(self, message, control_channels: List[discord.TextChannel]):
-        self.message = message
-        self.control_channels = control_channels
+async def display_help(message):
+    await message.channel.send(
+        "!restart - restart the bot\n"
+        "!log - print the log file\n"
+        "!rmlog - remove the log file\n"
+        "!status - print a status message\n"
+        "!help - print this message\n"
+    )
 
-    async def __call__(self):
-        await self.control_on_message()
 
-    @event
-    async def control_on_message(self):
-        """
-        This function is called whenever the bot sees a message in a control channel
-        """
-        content = self.message.content
-        if content.startswith('!restart'):
-            await self.restart(self.message)
+async def execute_command(text, channel):
+    """
+    Execute a command in the shell and return the output to the channel
+    """
+    # Run command using shell and pipe output to channel
+    work_dir = Path(__file__).parent
+    await send(channel, f"```ps\n$ {text}```")
+    process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
+    # Get output of command and send to channel
+    errors = process.stderr.decode('utf-8')
+    if errors:
+        await send(channel, f'Errors: ```{errors}```')
+    output = process.stdout.decode('utf-8')
+    if output:
+        await send(channel, f'```{output}```')
+    return
 
-        elif content.startswith('!log'):
-            await self.message.channel.send(file=discord.File('/tmp/duck.log'))
 
-        elif content.startswith('!rmlog'):
-            await self.execute_command("rm /tmp/duck.log", self.message.channel)
-            await self.execute_command("touch /tmp/duck.log", self.message.channel)
+async def restart(message):
+    """
+    Restart the bot
+    :param message: The message that triggered the restart
+    """
+    await message.channel.send(f'Restart requested.')
+    await execute_command('git fetch', message.channel)
+    await execute_command('git reset --hard', message.channel)
+    await execute_command('git clean -f', message.channel)
+    await execute_command('git pull --rebase=false', message.channel)
+    await execute_command('poetry install', message.channel)
+    await message.channel.send(f'Restarting.')
+    subprocess.Popen(["bash", "restart.sh"])
+    return
 
-        elif content.startswith('!status'):
-            await self.message.channel.send('I am alive.')
 
-        elif content.startswith('!help'):
-            await self.display_help()
-        elif content.startswith('!'):
-            await self.message.channel.send('Unknown command. Try !help')
+async def control_on_message(message):
+    """
+    This function is called whenever the bot sees a message in a control channel
+    :param message:
+    :return:
+    """
+    content = message.content
+    if content.startswith('!restart'):
+        await restart(message)
 
-    @event
-    async def display(self, text: str):
-        for channel in self.control_channels:
-            await send(channel, text)
+    elif content.startswith('!log'):
+        await message.channel.send(file=discord.File('/tmp/duck.log'))
 
-    @event
-    async def display_help(self):
-        await self.display(
-            "!restart - restart the bot\n"
-            "!log - print the log file\n"
-            "!rmlog - remove the log file\n"
-            "!status - print a status message\n"
-            "!help - print this message\n"
-        )
+    elif content.startswith('!rmlog'):
+        await execute_command("rm /tmp/duck.log", message.channel)
+        await execute_command("touch /tmp/duck.log", message.channel)
 
-    @event
-    async def execute_command(self, text, channel):
-        """
-        Execute a command in the shell and return the output to the channel
-        """
-        # Run command using shell and pipe output to channel
-        work_dir = Path(__file__).parent
-        await self.display(f"```ps\n$ {text}```")
-        process = subprocess.run(text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=work_dir)
-        # Get output of command and send to channel
-        errors = process.stderr.decode('utf-8')
-        if errors:
-            await self.display(f'Errors: ```{errors}```')
-        output = process.stdout.decode('utf-8')
-        if output:
-            await self.display(f'```{output}```')
-        return
+    elif content.startswith('!status'):
+        await message.channel.send('🦆')
 
-    async def restart(self, message):
-        """
-        Restart the bot
-        :param message: The message that triggered the restart
-        """
-        await message.channel.send(f'Restart requested.')
-        os.chdir(Path(__file__).parent)
-        await self.execute_command('git fetch', message.channel)
-        await self.execute_command('git reset --hard', message.channel)
-        await self.execute_command('git clean -f', message.channel)
-        await self.execute_command('git pull --rebase=false', message.channel)
-        await self.execute_command('poetry install', message.channel)
-        await message.channel.send(f'Restarting.')
-        subprocess.Popen(["bash", "restart.sh"])
-        return
+    elif content.startswith('!help'):
+        await display_help(message)
+    elif content.startswith('!'):
+        await message.channel.send('Unknown command. Try !help')
 
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
@@ -318,7 +306,7 @@ class MyClient(discord.Client):
             return
 
         if message.channel.id in self.control_channel_ids:
-            await self._control_duck(message)
+            await control_on_message(message)
             return
 
         # if the message is in a listen channel, create a thread
@@ -333,11 +321,6 @@ class MyClient(discord.Client):
         else:
             return
 
-    # Start new DuckControlFlow
-    # Maybe we don't need to start a workflow for this?
-    async def _control_duck(self, message: discord.Message):
-        await self.workflow_manager.start_async_workflow(str(message.channel.id),
-                                                         DuckControlFlow(message, self.control_channels))
 
     async def _create_conversation(self, prefix, message: discord.Message):
         # Create a private thread in the message channel
@@ -382,8 +365,7 @@ def main(prompts: Path, log_file: Path):
         JsonMetadataSerializer(saved_state),
         JsonEventSerializer(saved_state),
         {
-            'DuckResponseFlow': DiscordWorkflowSerializer(DuckResponseFlow, client, saved_state),
-            'DuckControlFlow': DiscordWorkflowSerializer(DuckControlFlow, client, saved_state)
+            'DuckResponseFlow': DiscordWorkflowSerializer(DuckResponseFlow, client, saved_state)
         }
     )
     # give the workflow manager to the client
