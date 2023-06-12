@@ -18,7 +18,7 @@ from quest.json_seralizers import JsonMetadataSerializer, JsonEventSerializer
 from quest.workflow import WorkflowFunction
 
 logging.basicConfig(level=logging.DEBUG)
-INPUT_EVENT_NAME = 'input'
+INPUT_EVENT_NAME = 'get_input'
 
 
 def load_env():
