@@ -6,10 +6,11 @@ import subprocess
 from pathlib import Path
 
 import discord
+from discord import ChannelType
 import openai
 import argparse
 
-from typing import Callable, TypedDict, Union, List
+from typing import Callable, TypedDict, Union
 
 from quest import event, signal as quest_signal
 from quest.workflow_manager import WorkflowSerializer, WorkflowManager
@@ -325,7 +326,8 @@ class MyClient(discord.Client):
     async def _create_conversation(self, prefix, message: discord.Message):
         # Create a private thread in the message channel
         thread = await message.channel.create_thread(
-            name=message.author.name,
+            name=message.author.name + ": " + message.content[:20],
+            type=ChannelType.public_thread,
             auto_archive_duration=60
         )
 
