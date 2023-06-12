@@ -42,18 +42,14 @@ class GPTMessage(TypedDict):
 
 class DuckResponseFlow:
     def __init__(self, thread: discord.Thread):
-                # author, chat_messages: list[GPTMessage],
-                # control_channels: list[discord.TextChannel]):
         self.thread = thread
-        # self.author = author
-        # self.chat_messages = chat_messages
-        # self.control_channels = control_channels
         self.starting = True
 
-    async def __call__(self, user_mention):
+    async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
+        self.control_channels = control_channels
         if self.starting:
             self.starting = False
-            welcome = f'{user_mention} What can I do for you?'
+            welcome = f'{message.author.user_mention} What can I do for you?'
             async with self.thread.typing():
                 await self.thread.send(welcome)
         else:
@@ -335,11 +331,12 @@ class MyClient(discord.Client):
         messages = [
             dict(role='system', content=prefix or message.content)
         ]
-        # start new register user workflow
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
-            DuckResponseFlow(thread, message.author, messages, self.control_channels),
-            str(message.author.mention))
+            DuckResponseFlow(thread),
+            message,
+            messages,
+            self.control_channels)
         # TODO::Should we handle messages that finish out of the gate?
 
     async def _continue_conversation(self, thread_id, text: str):
