@@ -253,7 +253,6 @@ class MyClient(discord.Client):
         self.log_file = log_file
 
         self._load_prompts(prompt_dir)
-        self._load_control_channels()
         self.guild_dict = {}  # Loaded in on_ready
 
     def _load_prompts(self, prompt_dir: Path):
@@ -280,6 +279,7 @@ class MyClient(discord.Client):
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
 
+        self._load_control_channels()
         # contextualize members
         self.workflow_manager.load_workflows()
         await self.workflow_manager.resume_workflows()
