@@ -205,7 +205,7 @@ class DuckControlFlow:
             await self.display(f'Errors: ```{errors}```')
         output = process.stdout.decode('utf-8')
         if output:
-            await self.display(channel, f'```{output}```')
+            await self.display(f'```{output}```')
         return
 
     async def restart(self, message):
