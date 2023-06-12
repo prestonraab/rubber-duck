@@ -59,6 +59,8 @@ class DuckResponseFlow:
 
             async with self.thread.typing():
                 await self.display(message)
+        user_response = self.get_input()
+        await self.display("You said: " + user_response)
 
 
     @quest_signal(INPUT_EVENT_NAME)
