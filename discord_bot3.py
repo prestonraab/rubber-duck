@@ -166,7 +166,7 @@ async def execute_command(text, channel):
     # Get output of command and send to channel
     errors = process.stderr.decode('utf-8')
     if errors:
-        await send(channel, f'Errors: ```{errors}```')
+        await send(channel, f'Error: ```{errors}```')
     output = process.stdout.decode('utf-8')
     if output:
         await send(channel, f'```{output}```')
