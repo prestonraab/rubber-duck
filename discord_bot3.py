@@ -41,18 +41,19 @@ class GPTMessage(TypedDict):
 
 
 class DuckResponseFlow:
-    def __init__(self, thread: discord.Thread, author, chat_messages: list[GPTMessage],
-                 control_channels: list[discord.TextChannel]):
+    def __init__(self, thread: discord.Thread):
+                # author, chat_messages: list[GPTMessage],
+                # control_channels: list[discord.TextChannel]):
         self.thread = thread
-        self.author = author
-        self.chat_messages = chat_messages
-        self.control_channels = control_channels
+        # self.author = author
+        # self.chat_messages = chat_messages
+        # self.control_channels = control_channels
         self.starting = True
 
     async def __call__(self, user_mention):
         if self.starting:
             self.starting = False
-            welcome = f'{self.author.mention} What can I do for you?'
+            welcome = f'{user_mention} What can I do for you?'
             async with self.thread.typing():
                 await self.thread.send(welcome)
         else:
@@ -354,6 +355,7 @@ class MyClient(discord.Client):
         with open('config.json') as file:
             config = json.load(file)
         self.control_channel_ids = config['control_channels']
+        print(self.control_channel_ids)
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
