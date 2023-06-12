@@ -59,6 +59,9 @@ class DuckResponseFlow:
         user_response = str(self.get_first_response())
         await self.display("You said: " + user_response)
 
+        user_response2 = str(self.get_first_response())
+        await self.display("You said: " + user_response2)
+
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
