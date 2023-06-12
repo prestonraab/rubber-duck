@@ -53,7 +53,9 @@ class DuckResponseFlow:
             async with self.thread.typing():
                 await self.thread.send(welcome)
         else:
-            message = f"""This function received these arguments: {message.content}"""
+            message = f"This function received these arguments: {message.content}" \
+                      f"{chat_messages}" \
+                        f"{control_channels}"
 
             async with self.thread.typing():
                 await self.display(message)
