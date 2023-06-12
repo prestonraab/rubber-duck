@@ -53,13 +53,10 @@ class DuckResponseFlow:
             async with self.thread.typing():
                 await self.thread.send(welcome)
         else:
-            message = f'This function received these arguments: ' \
-                      f'{message.content} ' \
-                        f'{"".join(map(str, chat_messages))} ' \
-                        f'{control_channels}'
+            message = f"""This function received these arguments: {message.content}"""
 
             async with self.thread.typing():
-                await self.thread.send(message)
+                await self.display(message)
 
 
     @quest_signal(INPUT_EVENT_NAME)
@@ -68,7 +65,7 @@ class DuckResponseFlow:
 
     @event
     async def display(self, text: str):
-        await self.thread.send(text)
+        await send(self.thread, text)
 
     @event
     async def display_control(self, text: str):
