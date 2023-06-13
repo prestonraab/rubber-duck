@@ -74,11 +74,14 @@ class Conversation:
 
 async def display_help(message):
     await message.channel.send(
-        "!restart - restart the bot\n"
-        "!log - print the log file\n"
-        "!rmlog - remove the log file\n"
-        "!status - print a status message\n"
-        "!help - print this message\n"
+        "`!restart` - restart the bot\n"
+        "`!kill` - kill the bot\n"
+        "`!log` - print the log file\n"
+        "`!rmlog` - remove the log file\n"
+        "`!purge` - purge inactive conversations\n"
+        "`!status` - print a status message\n"
+        "`!ping` - ping the bot\n"
+        "`!help` - print this message\n"
     )
 
 
@@ -113,6 +116,12 @@ async def restart(message):
     await execute_command('poetry install', message.channel)
     await message.channel.send(f'Restarting.')
     subprocess.Popen(["bash", "restart.sh"])
+    return
+
+
+async def kill(message):
+    await message.channel.send(f'Goodbye! :wave:')
+    subprocess.Popen(["bash", "kill.sh"])
     return
 
 
@@ -341,6 +350,9 @@ class MyClient(discord.Client):
         content = message.content
         if content.startswith('!restart'):
             await restart(message)
+
+        elif content.startswith('!kill'):
+            await kill(message)
 
         elif content.startswith('!log'):
             await message.channel.send(file=discord.File('/tmp/duck.log'))
