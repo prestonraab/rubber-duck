@@ -193,7 +193,7 @@ async def restart(message):
     return
 
 
-async def control_on_message(message):
+async def control_on_message(message, log_file: Path):
     """
     This function is called whenever the bot sees a message in a control channel
     :param message:
@@ -204,7 +204,7 @@ async def control_on_message(message):
         await restart(message)
 
     elif content.startswith('!log'):
-        await message.channel.send(file=discord.File('/tmp/duck.log'))
+        await message.channel.send(file=discord.File(log_file))
 
     elif content.startswith('!rmlog') or content.startswith('!rm log'):
         await execute_command("rm /tmp/duck.log", message.channel)
@@ -312,7 +312,7 @@ class MyClient(discord.Client):
             return
 
         if message.channel.id in self.control_channel_ids:
-            await control_on_message(message)
+            await control_on_message(message, self.log_file)
             return
 
         # if the message is in a listen channel, create a thread
