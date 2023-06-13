@@ -55,6 +55,12 @@ class DuckResponseFlow:
     async def display(self, text: str):
         await send(self.thread, text)
 
+    @event
+    async def repeat(self, i):
+        user_response = await self.get_response(f"Response {i}: ")
+        await self.display(f"Response {i}: " + user_response)
+
+
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
 
@@ -65,8 +71,7 @@ class DuckResponseFlow:
 
         #while datetime.datetime.now() - self.start_time < datetime.timedelta(seconds=CONVERSATION_TIMEOUT):
         for i in range(3):
-            user_response = await self.respond(message.content)
-            await self.display(f"Response {i}: " + user_response)
+            await self.repeat(i)
 
         await self.thread.send("Your time has expired.")
 
