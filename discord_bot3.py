@@ -86,6 +86,7 @@ class DuckResponseFlow:
         user_response = await self.get_input()
         category = await categorize(user_response)
         if category == "Chat":
+            self.chat_messages.append(dict(role='user', content=user_response))
             await self.respond(user_response)
         else:
             await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
