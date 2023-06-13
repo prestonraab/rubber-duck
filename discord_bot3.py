@@ -112,7 +112,7 @@ class DuckResponseFlow:
         for channel in self.control_channels:
             await channel.send(text)
 
-    @quest_signal("respond")
+
     async def respond(self, message_text: str):
 
         """
