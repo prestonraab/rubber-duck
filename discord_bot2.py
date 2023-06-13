@@ -61,7 +61,7 @@ class Conversation:
         }
 
     def is_active(self) -> bool:
-        return (self.last_message - datetime.now()) > timedelta(days=1)
+        return (datetime.now() - self.last_message) > timedelta(days=3)
 
     @staticmethod
     def from_json(jobj: dict, thread: discord.Thread) -> 'Conversation':
@@ -279,9 +279,18 @@ class MyClient(discord.Client):
         try:
             (self.conversation_dir / filename).unlink()
             del self.conversations[conversation.thread_id]
-            await conversation.thread.purge()  # Is this something we want to do?
+            await conversation.thread.delete()  # Is this something we want to do? Discord already hides inactive threads
         except Exception as ex:
             logging.exception(f"Unable to purge conversation: {filename}")
+
+    async def _purge_conversations(self):
+        # Purge inactive conversations
+        conversations_to_purge = []
+        for conversation in self.conversations.values():
+            if not conversation.is_active():
+                conversations_to_purge.append(conversation)
+        for conversation in conversations_to_purge:
+            await self._purge_conversation(conversation)
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
@@ -294,9 +303,7 @@ class MyClient(discord.Client):
         logging.info('Done loading conversations')
 
         logging.info('Purging inactive conversations')
-        for conversation in self.conversations.values():
-            if not conversation.is_active():
-                await self._purge_conversation(conversation)
+        await self._purge_conversations()
         logging.info('Done purging inactive conversations')
 
         # print out information when the bot wakes up
