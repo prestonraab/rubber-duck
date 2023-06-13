@@ -41,6 +41,13 @@ class GPTMessage(TypedDict):
     content: str
 
 
+categories = {
+"Hi": "Greeting",
+}
+
+async def categorize(text: str):
+    return categories.get(text, "Unknown")
+
 class DuckResponseFlow:
     def __init__(self, thread):
         self.thread = thread
@@ -56,9 +63,10 @@ class DuckResponseFlow:
         await send(self.thread, text)
 
     @event
-    async def repeat(self, time_left):
+    async def chat(self, time_left: int):
         user_response = await self.get_response(f"Time_left {time_left}: ")
-        await self.display(f"Time_left {time_left}: " + user_response)
+        category = await categorize(user_response)
+        await self.display(f"Category {category}: " + user_response)
 
 
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
@@ -71,7 +79,7 @@ class DuckResponseFlow:
 
 
         while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
-            await self.repeat(time_left)
+            await self.chat(time_left)
 
         await self.thread.send("Your time has expired.")
 
