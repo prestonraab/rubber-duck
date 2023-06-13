@@ -63,11 +63,10 @@ class DuckResponseFlow:
         async with self.thread.typing():
             await self.thread.send(welcome)
 
-        i = 1
-        while datetime.datetime.now() - self.start_time < datetime.timedelta(seconds=CONVERSATION_TIMEOUT):
+        #while datetime.datetime.now() - self.start_time < datetime.timedelta(seconds=CONVERSATION_TIMEOUT):
+        for i in range(3):
             user_response = await self.respond(message.content)
             await self.display(f"Response {i}: " + user_response)
-            i += 1
 
         await self.thread.send("Your time has expired.")
 
