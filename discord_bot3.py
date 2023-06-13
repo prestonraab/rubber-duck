@@ -78,21 +78,21 @@ class DuckResponseFlow:
 
     @event
     async def display(self, text: str):
-        await send(self.thread, text)
+        async with self.thread.typing():
+            await send(self.thread, text)
 
     @event
     async def chat(self, time_left: int):
-        user_response = await self.get_response(f"Time_left {time_left}. Enter your response: ")
+        user_response = await self.get_input()
         category = await categorize(user_response)
-        await self.display(f"Category: {category}")
+        await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
 
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
 
-        # Happening multiple times
-        welcome = f"This happens whenever you send a message: {message.content}"
+        every_time = f"Original message: {message.content}"
         async with self.thread.typing():
-            await self.thread.send(welcome)
+            await self.thread.send(every_time)
 
         while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
             await self.chat(time_left)
