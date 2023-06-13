@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import os
@@ -41,8 +42,10 @@ class GPTMessage(TypedDict):
 
 
 class DuckResponseFlow:
-    def __init__(self, thread: discord.Thread):
+    def __init__(self, thread):
         self.thread = thread
+        self.chat_messages: list[GPTMessage] = []
+        self.start_time = datetime.datetime.now()
 
     async def get_response(self, prompt: str):
         await self.display(prompt)
@@ -60,14 +63,13 @@ class DuckResponseFlow:
         async with self.thread.typing():
             await self.thread.send(welcome)
 
+        i = 1
+        while(datetime.datetime.now() - self.start_time < datetime.timedelta(seconds=CONVERSATION_TIMEOUT)):
+            user_response = await self.respond(message.content)
+            await self.display(f"Response {i}: " + user_response)
+            i += 1
 
-        user_response = await self.get_response('Please enter a first response: ')
-        await self.display("You said first: " + user_response)
-
-        user_response2 = await self.get_response('Please enter a second response: ')
-        await self.display("You said second: " + user_response2)
-
-        await self.thread.send("Exiting function")
+        await self.thread.send("Your time has expired.")
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
@@ -153,7 +155,7 @@ async def display_help(message):
     await message.channel.send(
         "!restart - restart the bot\n"
         "!log - print the log file\n"
-        "!rmlog - remove the log file\n"
+        "!rm log - remove the log file\n"
         "!status - print a status message\n"
         "!help - print this message\n"
     )
