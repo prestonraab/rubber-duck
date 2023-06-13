@@ -31,6 +31,7 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
 CONVERSATION_TIMEOUT = 60 * 3  # three minutes
+PURGE_TIMEOUT = timedelta(days=3)
 
 
 class GPTMessage(TypedDict):
@@ -60,8 +61,8 @@ class Conversation:
             "messages": self.messages
         }
 
-    def is_active(self) -> bool:
-        return (datetime.now() - self.last_message) > timedelta(days=3)
+    def is_active(self):
+        return self.last_message + PURGE_TIMEOUT > datetime.utcnow()
 
     @staticmethod
     def from_json(jobj: dict, thread: discord.Thread) -> 'Conversation':
@@ -113,32 +114,6 @@ async def restart(message):
     await message.channel.send(f'Restarting.')
     subprocess.Popen(["bash", "restart.sh"])
     return
-
-
-async def control_on_message(message):
-    """
-    This function is called whenever the bot sees a message in a control channel
-    :param message:
-    :return:
-    """
-    content = message.content
-    if content.startswith('!restart'):
-        await restart(message)
-
-    elif content.startswith('!log'):
-        await message.channel.send(file=discord.File('/tmp/duck.log'))
-
-    elif content.startswith('!rmlog'):
-        await execute_command("rm /tmp/duck.log", message.channel)
-        await execute_command("touch /tmp/duck.log", message.channel)
-
-    elif content.startswith('!status'):
-        await message.channel.send('I am alive.')
-
-    elif content.startswith('!help'):
-        await display_help(message)
-    elif content.startswith('!'):
-        await message.channel.send('Unknown command. Try !help')
 
 
 async def query(conversation: Conversation, message_text: str):
@@ -279,7 +254,7 @@ class MyClient(discord.Client):
         try:
             (self.conversation_dir / filename).unlink()
             del self.conversations[conversation.thread_id]
-            await conversation.thread.delete()  # Is this something we want to do? Discord already hides inactive threads
+            await conversation.thread.delete()
         except Exception as ex:
             logging.exception(f"Unable to purge conversation: {filename}")
 
@@ -291,6 +266,12 @@ class MyClient(discord.Client):
                 conversations_to_purge.append(conversation)
         for conversation in conversations_to_purge:
             await self._purge_conversation(conversation)
+
+    async def _purge_messages(self):
+        # Purge old messages from channels not in self.control_channels
+        for channel in self.get_all_channels():
+            if channel not in self.control_channels and channel.name in self.prompts:
+                await channel.purge(before=datetime.now() - PURGE_TIMEOUT)
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
@@ -305,6 +286,10 @@ class MyClient(discord.Client):
         logging.info('Purging inactive conversations')
         await self._purge_conversations()
         logging.info('Done purging inactive conversations')
+
+        logging.info('Purging messages')
+        await self._purge_messages()
+        logging.info('Done purging messages')
 
         # print out information when the bot wakes up
         logging.info('Logged in as')
@@ -331,7 +316,7 @@ class MyClient(discord.Client):
             return
 
         if message.channel.id in self.control_channel_ids:
-            await control_on_message(message)
+            await self.control_on_message(message)
             return
 
         # if the message is in a listen channel, create a thread
@@ -346,6 +331,41 @@ class MyClient(discord.Client):
         # otherwise, ignore the message
         else:
             return
+
+    async def control_on_message(self, message: discord.Message):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        :param message:
+        :return:
+        """
+        content = message.content
+        if content.startswith('!restart'):
+            await restart(message)
+
+        elif content.startswith('!log'):
+            await message.channel.send(file=discord.File('/tmp/duck.log'))
+
+        elif content.startswith('!rmlog'):
+            await execute_command("rm /tmp/duck.log", message.channel)
+            await execute_command("touch /tmp/duck.log", message.channel)
+
+        elif content.startswith('!status'):
+            await message.channel.send('I am alive.')
+
+        elif content.startswith('!ping'):
+            await message.channel.send('pong')
+
+        elif content.startswith('!purge'):
+            await message.channel.send('Purging inactive conversations')
+            self.__exit__()  # Serialize conversations again to update last_message
+            await self._purge_conversations()
+            await self._purge_messages()
+            await message.channel.send('Done purging inactive conversations')
+
+        elif content.startswith('!help'):
+            await display_help(message)
+        elif content.startswith('!'):
+            await message.channel.send('Unknown command. Try !help')
 
     async def create_conversation(self, prefix, message):
         """
@@ -376,6 +396,7 @@ class MyClient(discord.Client):
             ]
         )
         self.conversations[thread.id] = conversation
+
         async with thread.typing():
             await thread.send(welcome)
 
