@@ -42,6 +42,7 @@ class GPTMessage(TypedDict):
 
 
 categories = {
+    "Chat": ["chat", "gpt", "gpt-4", "duck", "talk", "discuss", "help", "assistance", "need"],
     "Greeting": ["hi", "hello", "hey", "howdy", "greetings", "good morning", "good evening", "good afternoon"],
     "Goodbye": ["bye", "goodbye", "goodnight", "see you later", "see ya", "cya"],
     "Gratitude": ["thanks", "thank you"],
@@ -56,8 +57,7 @@ categories = {
                       "what are you saying?",
                       "what are you trying to say", "what are you trying to say?", "what do you mean by that"],
     "Exclamation": ["wow", "wow!", "wow...", "oh", "oh!", "oh...", "huh", "huh?", "huh...", "ah"],
-    "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"],
-    "Chat": ["chat", "gpt", "gpt-4", "duck", "talk", "discuss", "help", "assistance", "need"]
+    "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"]
 }
 
 
@@ -82,7 +82,6 @@ class DuckResponseFlow:
         async with self.thread.typing():
             await send(self.thread, text)
 
-    @event
     async def chat(self, time_left: int):
         user_response = await self.get_input()
         category = await categorize(user_response)
@@ -113,6 +112,7 @@ class DuckResponseFlow:
             await channel.send(text)
 
 
+    @event
     async def respond(self, message_text: str):
 
         """
