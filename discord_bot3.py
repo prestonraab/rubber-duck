@@ -206,7 +206,7 @@ async def control_on_message(message):
     elif content.startswith('!log'):
         await message.channel.send(file=discord.File('/tmp/duck.log'))
 
-    elif content.startswith('!rmlog'):
+    elif content.startswith('!rmlog') or content.startswith('!rm log'):
         await execute_command("rm /tmp/duck.log", message.channel)
         await execute_command("touch /tmp/duck.log", message.channel)
 
