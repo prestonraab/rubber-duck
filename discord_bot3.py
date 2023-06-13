@@ -42,11 +42,29 @@ class GPTMessage(TypedDict):
 
 
 categories = {
-"Hi": "Greeting",
+    "Greeting": ["hi", "hello", "hey", "howdy", "greetings", "good morning", "good evening", "good afternoon"],
+    "Goodbye": ["bye", "goodbye", "goodnight", "see you later", "see ya", "cya"],
+    "Gratitude": ["thanks", "thank you"],
+    "Affirmation": ["yes", "yep", "yeah", "indeed", "that's right", "ok", "okay", "cool", "great", "sounds good"],
+    "Negative": ["no", "nope", "nah", "that's wrong", "that's incorrect", "that is wrong", "that is incorrect"],
+    "Apology": ["sorry", "my apologies", "my apologies", "my bad"],
+    "Condescension": ["whatever", "sure", "I guess", "if you say so", "yeah, right"],
+    "Agreement": ["I agree", "I disagree", "I don't agree", "I don't disagree"],
+    "Question": ["what", "why", "how", "when", "where", "who"],
+    "Clarification": ["what do you mean", "what do you mean?", "what does that mean", "what does that mean?",
+
+        "what are you talking about", "what are you talking about?", "what are you saying", "what are you saying?",
+        "what are you trying to say", "what are you trying to say?", "what do you mean by that"],
+    "Exclamation": ["wow", "wow!", "wow...", "oh", "oh!", "oh...", "huh", "huh?", "huh...", "ah"],
+    "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"]
 }
 
+
 async def categorize(text: str):
-    return categories.get(text, "Unknown")
+    for category, keywords in categories.items():
+        if any(keyword.lower() in text.lower() for keyword in keywords):
+            return category
+
 
 class DuckResponseFlow:
     def __init__(self, thread):
@@ -68,7 +86,6 @@ class DuckResponseFlow:
         category = await categorize(user_response)
         await self.display(f"Category {category}: " + user_response)
 
-
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
 
@@ -76,7 +93,6 @@ class DuckResponseFlow:
         welcome = f"This happens whenever you send a message: {message.content}"
         async with self.thread.typing():
             await self.thread.send(welcome)
-
 
         while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
             await self.chat(time_left)
@@ -86,7 +102,6 @@ class DuckResponseFlow:
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
         ...
-
 
     @event
     async def display_control(self, text: str):
