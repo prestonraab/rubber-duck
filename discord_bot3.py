@@ -64,7 +64,7 @@ class DuckResponseFlow:
             await self.thread.send(welcome)
 
         i = 1
-        while(datetime.datetime.now() - self.start_time < datetime.timedelta(seconds=CONVERSATION_TIMEOUT)):
+        while datetime.datetime.now() - self.start_time < datetime.timedelta(seconds=CONVERSATION_TIMEOUT):
             user_response = await self.respond(message.content)
             await self.display(f"Response {i}: " + user_response)
             i += 1
