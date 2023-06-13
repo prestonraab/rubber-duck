@@ -52,9 +52,9 @@ categories = {
     "Agreement": ["I agree", "I disagree", "I don't agree", "I don't disagree"],
     "Question": ["what", "why", "how", "when", "where", "who"],
     "Clarification": ["what do you mean", "what do you mean?", "what does that mean", "what does that mean?",
-
-        "what are you talking about", "what are you talking about?", "what are you saying", "what are you saying?",
-        "what are you trying to say", "what are you trying to say?", "what do you mean by that"],
+                      "what are you talking about", "what are you talking about?", "what are you saying",
+                      "what are you saying?",
+                      "what are you trying to say", "what are you trying to say?", "what do you mean by that"],
     "Exclamation": ["wow", "wow!", "wow...", "oh", "oh!", "oh...", "huh", "huh?", "huh...", "ah"],
     "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"]
 }
@@ -82,9 +82,9 @@ class DuckResponseFlow:
 
     @event
     async def chat(self, time_left: int):
-        user_response = await self.get_response(f"Time_left {time_left}: ")
+        user_response = await self.get_response(f"Time_left {time_left}. Enter your response: ")
         category = await categorize(user_response)
-        await self.display(f"Category {category}: " + user_response)
+        await self.display(f"Category: {category}")
 
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
