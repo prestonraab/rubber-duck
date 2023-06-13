@@ -56,7 +56,8 @@ categories = {
                       "what are you saying?",
                       "what are you trying to say", "what are you trying to say?", "what do you mean by that"],
     "Exclamation": ["wow", "wow!", "wow...", "oh", "oh!", "oh...", "huh", "huh?", "huh...", "ah"],
-    "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"]
+    "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"],
+    "Chat": ["chat", "gpt", "gpt-4", "duck", "talk", "discuss", "help", "assistance", "need"]
 }
 
 
@@ -72,7 +73,7 @@ class DuckResponseFlow:
         self.chat_messages: list[GPTMessage] = []
         self.start_time = datetime.datetime.now()
 
-    async def get_response(self, prompt: str):
+    async def prompt(self, prompt: str):
         await self.display(prompt)
         return await self.get_input()
 
@@ -85,7 +86,10 @@ class DuckResponseFlow:
     async def chat(self, time_left: int):
         user_response = await self.get_input()
         category = await categorize(user_response)
-        await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
+        if category == "Chat":
+            await self.respond(user_response)
+        else:
+            await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
 
     async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
