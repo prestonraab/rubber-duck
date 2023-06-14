@@ -69,9 +69,9 @@ async def categorize(text: str):
 
 
 class DuckResponseFlow:
-    def __init__(self, thread, control_channels: list[discord.TextChannel]):
+    def __init__(self, thread, control_channels: list[discord.TextChannel], messages: list[GPTMessage] = None):
         self.thread = thread
-        self.chat_messages: list[GPTMessage] = []
+        self.chat_messages: list[GPTMessage] = messages
         self.control_channels = control_channels
         self.start_time = datetime.datetime.now()
 
@@ -376,9 +376,8 @@ class MyClient(discord.Client):
         ]
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
-            DuckResponseFlow(thread),
-            messages,
-            self.control_channels)
+            DuckResponseFlow(thread, self.control_channels, messages)
+        )
         # TODO::Should we handle messages that finish out of the gate?
 
     async def _continue_conversation(self, thread_id, text: str):
