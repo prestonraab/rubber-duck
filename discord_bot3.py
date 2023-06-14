@@ -87,7 +87,6 @@ class DuckResponseFlow:
         user_response = await self.get_input()
         category = await categorize(user_response)
         if category == "Chat":
-            self.chat_messages.append(dict(role='user', content=user_response))
             await self.respond(user_response)
         else:
             await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
@@ -95,7 +94,7 @@ class DuckResponseFlow:
     async def __call__(self, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
         user_response = await self.prompt("How can I help you?")
-        logging.debug(f"User response: {user_response}")
+        await self.display(f"Time left: {CONVERSATION_TIMEOUT}. Enter your response: ")
         await self.respond(user_response)
         # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
         #     await self.chat(time_left)
@@ -226,6 +225,7 @@ async def restart(message):
 async def control_on_message(message, log_file: Path):
     """
     This function is called whenever the bot sees a message in a control channel
+    :param log_file:
     :param message:
     :return:
     """
