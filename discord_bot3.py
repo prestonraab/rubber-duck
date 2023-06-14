@@ -92,14 +92,10 @@ class DuckResponseFlow:
         else:
             await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
 
-    async def __call__(self, message, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
+    async def __call__(self, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
-
-        every_time = f"Original message: {message.content}"
-        async with self.thread.typing():
-            await self.thread.send(every_time)
-
-        await self.respond(message)
+        user_response = await self.prompt("How can I help you?")
+        await self.respond(user_response)
         # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
         #     await self.chat(time_left)
 
@@ -374,7 +370,6 @@ class MyClient(discord.Client):
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
             DuckResponseFlow(thread),
-            message,
             messages,
             self.control_channels)
         # TODO::Should we handle messages that finish out of the gate?
