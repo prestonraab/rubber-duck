@@ -285,6 +285,7 @@ class MyClient(discord.Client):
         await self.workflow_manager.resume_workflows()
         # print out information when the bot wakes up
         logging.basicConfig(filename=self.log_file, level=logging.INFO, handlers=[logging.FileHandler(self.log_file)])
+        print('Logged in as')
         logging.info('Logged in as')
         logging.info(self.user.name)
         logging.info(self.user.id)
