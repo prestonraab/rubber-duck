@@ -78,6 +78,13 @@ class DuckResponseFlow:
         await self.display(prompt)
         return await self.get_input()
 
+    async def chat_prompt(self, prompt: str):
+        response = await self.query(self.chat_messages, prompt)
+        if not response:
+            return 'RubberDuck encountered an error.'
+        else:
+            return response
+
     @event
     async def display(self, text: str):
         async with self.thread.typing():
@@ -95,13 +102,8 @@ class DuckResponseFlow:
         self.control_channels = control_channels
         user_response = await self.prompt("How can I help you?")
         await self.display(f"Time left: {CONVERSATION_TIMEOUT}. You said: {user_response} ")
-        response = await self.query(self.chat_messages, user_response)
-        if not response:
-            await self.display('RubberDuck encountered an error.')
-        else:
-            # send the model's response to the Discord channel
-            await self.display(response)
-            #await send(self.thread, response)
+        response = await self.chat_prompt(user_response)
+        await self.display(f"Chat said {response}")
 
         # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
         #     await self.chat(time_left)
@@ -111,6 +113,27 @@ class DuckResponseFlow:
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
         ...
+
+    @quest_signal(CHAT_EVENT_NAME)
+    async def query(self, message_text: str):
+        """
+        Query the OPENAI API
+        """
+        self.chat_messages.append(dict(role='user', content=message_text))
+
+        completion = await openai.ChatCompletion.acreate(
+            model=AI_ENGINE,
+            messages=self.chat_messages
+        )
+        logging.debug(f"Completion: {completion}")
+
+        response_message = completion.choices[0]['message']
+        response = response_message['content'].strip()
+        logging.debug(f"Response: {response}")
+
+        self.chat_messages.append(response_message)
+
+        return response
 
     @event
     async def display_control(self, text: str):
@@ -134,26 +157,7 @@ class DuckResponseFlow:
             #await self.display(response)
             await send(self.thread, response)
 
-    @quest_signal(CHAT_EVENT_NAME)
-    async def query(self, message_text: str):
-        """
-        Query the OPENAI API
-        """
-        self.chat_messages.append(dict(role='user', content=message_text))
 
-        completion = await openai.ChatCompletion.acreate(
-            model=AI_ENGINE,
-            messages=self.chat_messages
-        )
-        logging.debug(f"Completion: {completion}")
-
-        response_message = completion.choices[0]['message']
-        response = response_message['content'].strip()
-        logging.debug(f"Response: {response}")
-
-        self.chat_messages.append(response_message)
-
-        return response
 
 
 def parse_blocks(text: str, limit=2000):
