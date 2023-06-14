@@ -191,9 +191,6 @@ async def restart(message):
 async def control_on_message(message, log_file: Path):
     """
     This function is called whenever the bot sees a message in a control channel
-    :param log_file:
-    :param message:
-    :return:
     """
     content = message.content
     if content.startswith('!restart'):
@@ -287,6 +284,7 @@ class MyClient(discord.Client):
         self.workflow_manager.load_workflows()
         await self.workflow_manager.resume_workflows()
         # print out information when the bot wakes up
+        logging.basicConfig(filename=self.log_file)
         logging.info('Logged in as')
         logging.info(self.user.name)
         logging.info(self.user.id)
@@ -356,7 +354,6 @@ class MyClient(discord.Client):
         with open('config.json') as file:
             config = json.load(file)
         self.control_channel_ids = config['control_channels']
-        print(self.control_channel_ids)
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
