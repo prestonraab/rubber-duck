@@ -20,6 +20,7 @@ from quest.workflow import WorkflowFunction
 
 logging.basicConfig(level=logging.DEBUG)
 INPUT_EVENT_NAME = 'get_input'
+CHAT_EVENT_NAME = 'query'
 
 
 def load_env():
@@ -113,7 +114,6 @@ class DuckResponseFlow:
         for channel in self.control_channels:
             await channel.send(text)
 
-    @event
     async def respond(self, message_text: str):
 
         """
@@ -128,9 +128,9 @@ class DuckResponseFlow:
                 response = 'RubberDuck encountered an error.'
 
             # send the model's response to the Discord channel
-            await send(self.thread, response)
+            await self.display(response)
 
-    @quest_signal(INPUT_EVENT_NAME)
+    @quest_signal(CHAT_EVENT_NAME)
     async def query(self, message_text: str):
         """
         Query the OPENAI API
