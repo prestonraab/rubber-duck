@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import os
@@ -20,7 +19,6 @@ from quest.workflow import WorkflowFunction
 
 logging.basicConfig(level=logging.DEBUG)
 INPUT_EVENT_NAME = 'get_input'
-CHAT_EVENT_NAME = 'query'
 
 
 def load_env():
@@ -34,7 +32,6 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
-CONVERSATION_TIMEOUT = 60 * 3  # three minutes
 
 
 class GPTMessage(TypedDict):
@@ -42,55 +39,13 @@ class GPTMessage(TypedDict):
     content: str
 
 
-categories = {
-    "Chat": ["chat", "gpt", "gpt-4", "duck", "talk", "discuss", "help", "assistance", "need"],
-    "Greeting": ["hi", "hello", "hey", "howdy", "greetings", "good morning", "good evening", "good afternoon"],
-    "Goodbye": ["bye", "goodbye", "goodnight", "see you later", "see ya", "cya"],
-    "Gratitude": ["thanks", "thank you"],
-    "Affirmation": ["yes", "yep", "yeah", "indeed", "that's right", "ok", "okay", "cool", "great", "sounds good"],
-    "Negative": ["no", "nope", "nah", "that's wrong", "that's incorrect", "that is wrong", "that is incorrect"],
-    "Apology": ["sorry", "my apologies", "my apologies", "my bad"],
-    "Condescension": ["whatever", "sure", "I guess", "if you say so", "yeah, right"],
-    "Agreement": ["I agree", "I disagree", "I don't agree", "I don't disagree"],
-    "Question": ["what", "why", "how", "when", "where", "who"],
-    "Clarification": ["what do you mean", "what do you mean?", "what does that mean", "what does that mean?",
-                      "what are you talking about", "what are you talking about?", "what are you saying",
-                      "what are you saying?",
-                      "what are you trying to say", "what are you trying to say?", "what do you mean by that"],
-    "Exclamation": ["wow", "wow!", "wow...", "oh", "oh!", "oh...", "huh", "huh?", "huh...", "ah"],
-    "Hedge": ["maybe", "perhaps", "I don't know", "I don't think so"]
-}
-
-
-async def categorize(text: str):
-    for category, keywords in categories.items():
-        if any(keyword.lower() in text.lower() for keyword in keywords):
-            return category
-
-
 class DuckResponseFlow:
-    def __init__(self, thread, control_channels: list[discord.TextChannel], messages: list[GPTMessage] = None):
+    def __init__(self, thread, message_id, control_channels: list[discord.TextChannel],
+                 chat_messages: list[GPTMessage] = None):
         self.thread = thread
-        self.chat_messages: list[GPTMessage] = messages
+        self.chat_messages: list[GPTMessage] = chat_messages
+        self.initial_message_id = message_id
         self.control_channels = control_channels
-        self.start_time = datetime.datetime.now()
-
-    async def prompt(self, prompt: str):
-        await self.display(prompt)
-        return await self.get_input()
-
-    @event
-    async def display(self, text: str):
-        async with self.thread.typing():
-            await send(self.thread, text)
-
-    async def category_chat(self, time_left: int):
-        user_response = await self.get_input()
-        category = await categorize(user_response)
-        if category == "Chat":
-            await self.respond(user_response)
-        else:
-            await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
 
     async def __call__(self):
         user_response = await self.prompt("How can I help you?")
@@ -101,9 +56,16 @@ class DuckResponseFlow:
                 if not response:
                     response = 'RubberDuck encountered an error.'
 
-            user_response = await self.prompt(f"Chat said {response}")
+            user_response = await self.prompt(response)
 
-        # await self.thread.send("All events completed.")
+    async def prompt(self, prompt: str):
+        await self.display(prompt)
+        return await self.get_input()
+
+    @event
+    async def display(self, text: str):
+        async with self.thread.typing():
+            await send(self.thread, text)
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
@@ -149,10 +111,8 @@ class DuckResponseFlow:
                 response = 'RubberDuck encountered an error.'
 
             # send the model's response to the Discord channel
-            #await self.display(response)
+            # await self.display(response)
             await send(self.thread, response)
-
-
 
 
 def parse_blocks(text: str, limit=2000):
@@ -274,8 +234,11 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
-            thread = self.get_thread(workflow_metadata['tid'])
-            return self.create_workflow(thread)
+            args = {}
+            if 'tid' in workflow_metadata['tid']:
+                args['thread'] = self.get_thread(workflow_metadata['tid'])
+
+            return self.create_workflow(**args)
 
     def get_thread(self, tid) -> discord.Thread:
         thread = self.discord_client.get_channel(int(tid))
@@ -376,7 +339,7 @@ class MyClient(discord.Client):
         ]
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
-            DuckResponseFlow(thread, self.control_channels, messages)
+            DuckResponseFlow(thread, message.id, self.control_channels, messages)
         )
         # TODO::Should we handle messages that finish out of the gate?
 
