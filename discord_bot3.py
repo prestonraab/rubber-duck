@@ -283,7 +283,6 @@ class MyClient(discord.Client):
         self.workflow_manager.load_workflows()
         await self.workflow_manager.resume_workflows()
         # print out information when the bot wakes up
-        print('Logged in as')
         logging.info('Logged in as')
         logging.info(self.user.name)
         logging.info(self.user.id)
