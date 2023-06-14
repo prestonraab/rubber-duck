@@ -98,8 +98,9 @@ class DuckResponseFlow:
         async with self.thread.typing():
             await self.thread.send(every_time)
 
-        while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
-            await self.chat(time_left)
+        await self.respond(message)
+        # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
+        #     await self.chat(time_left)
 
         await self.thread.send("Your time has expired.")
 
@@ -111,7 +112,6 @@ class DuckResponseFlow:
     async def display_control(self, text: str):
         for channel in self.control_channels:
             await channel.send(text)
-
 
     @event
     async def respond(self, message_text: str):
