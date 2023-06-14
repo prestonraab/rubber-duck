@@ -17,7 +17,6 @@ from quest.workflow_manager import WorkflowSerializer, WorkflowManager
 from quest.json_seralizers import JsonMetadataSerializer, JsonEventSerializer
 from quest.workflow import WorkflowFunction
 
-logging.basicConfig(level=logging.DEBUG)
 INPUT_EVENT_NAME = 'get_input'
 
 
