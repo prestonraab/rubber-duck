@@ -95,7 +95,14 @@ class DuckResponseFlow:
         self.control_channels = control_channels
         user_response = await self.prompt("How can I help you?")
         await self.display(f"Time left: {CONVERSATION_TIMEOUT}. You said: {user_response} ")
-        await self.respond(user_response)
+        response = await self.query(self.chat_messages, user_response)
+        if not response:
+            await self.display('RubberDuck encountered an error.')
+        else:
+            # send the model's response to the Discord channel
+            await self.display(response)
+            #await send(self.thread, response)
+
         # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
         #     await self.chat(time_left)
 
