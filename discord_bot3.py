@@ -79,11 +79,12 @@ class DuckResponseFlow:
         return await self.get_input()
 
     async def chat_prompt(self, prompt: str):
-        response = await self.query(self.chat_messages, prompt)
-        if not response:
-            return 'RubberDuck encountered an error.'
-        else:
-            return response
+        async with self.thread.typing():
+            response = await self.query(self.chat_messages, prompt)
+            if not response:
+                return 'RubberDuck encountered an error.'
+            else:
+                return response
 
     @event
     async def display(self, text: str):
