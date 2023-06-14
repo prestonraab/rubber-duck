@@ -69,22 +69,18 @@ async def categorize(text: str):
 
 
 class DuckResponseFlow:
-    def __init__(self, thread):
+    def __init__(self, thread, control_channels: list[discord.TextChannel]):
         self.thread = thread
         self.chat_messages: list[GPTMessage] = []
+        self.control_channels = control_channels
         self.start_time = datetime.datetime.now()
 
-    async def prompt_once(self, prompt: str):
-        await self.display_once(prompt)
+    async def prompt(self, prompt: str):
+        await self.display(prompt)
         return await self.get_input()
 
-    async def chat_prompt(self, prompt: str):
-        async with self.thread.typing():
-            return str(await self.chat(prompt))
-
-
     @event
-    async def display_once(self, text: str):
+    async def display(self, text: str):
         async with self.thread.typing():
             await send(self.thread, text)
 
@@ -94,35 +90,27 @@ class DuckResponseFlow:
         if category == "Chat":
             await self.respond(user_response)
         else:
-            await self.display_once(f"Category: {category}. Time left: {time_left}. Enter your response: ")
+            await self.display(f"Category: {category}. Time left: {time_left}. Enter your response: ")
 
-    async def __call__(self, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
-        # Future timer to end conversation
-        # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
-        #     await self.chat(time_left)
+    async def __call__(self):
+        user_response = await self.prompt("How can I help you?")
 
-        self.control_channels = control_channels
-        user_response = await self.prompt_once("How can I help you?")
-        await self.display_once(f"Time left: {CONVERSATION_TIMEOUT}. You said: {user_response} ")
+        while True:
+            async with self.thread.typing():
+                response = await self.query(user_response)
+                if not response:
+                    response = 'RubberDuck encountered an error.'
 
-        async with self.thread.typing():
-            response = await self.query(user_response)
-            if not response:
-                response = 'RubberDuck encountered an error.'
+            user_response = await self.prompt(f"Chat said {response}")
 
-        await self.display_once(f"Chat said {response}")
-
-        await self.thread.send("All events completed.")
+        # await self.thread.send("All events completed.")
 
     @quest_signal(INPUT_EVENT_NAME)
     def get_input(self):
         ...
 
-    @quest_signal(CHAT_EVENT_NAME)
+    @event
     async def query(self, message_text: str):
-        ...
-
-    async def chat(self, message_text: str):
         """
         Query the OPENAI API
         """
