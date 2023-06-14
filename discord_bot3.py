@@ -95,6 +95,7 @@ class DuckResponseFlow:
     async def __call__(self, chat_messages: list[GPTMessage], control_channels: list[discord.TextChannel]):
         self.control_channels = control_channels
         user_response = await self.prompt("How can I help you?")
+        logging.debug(f"User response: {user_response}")
         await self.respond(user_response)
         # while (time_left := CONVERSATION_TIMEOUT - (datetime.datetime.now() - self.start_time).seconds) > 0:
         #     await self.chat(time_left)
