@@ -352,7 +352,8 @@ class MyClient(discord.Client):
         ]
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
-            DuckResponseFlow(thread, message.id, self.control_channels, messages)
+            DuckResponseFlow,
+            thread, message.id, self.control_channels, messages
         )
 
     async def _continue_conversation(self, thread_id, text: str):
