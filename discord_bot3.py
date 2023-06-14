@@ -221,6 +221,15 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         # Serialize workflow to specified folder location with metadata
         # create a dict to serialize
         metadata = {"tid": workflow_id, "wid": workflow_id}
+        if workflow.thread:
+            metadata["tid"] = str(workflow.thread.id)
+        if workflow.message_id:
+            metadata["mid"] = workflow.message_id
+        if workflow.control_channels:
+            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
+        if workflow.chat_messages:
+            metadata["chat_messages"] = [message.to_dict() for message in workflow.chat_messages]
+
         file_to_save = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_save, 'w') as file:
             json.dump(metadata, file)
@@ -231,8 +240,16 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
             args = {}
-            if 'tid' in workflow_metadata['tid']:
+            if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
+            if 'mid' in workflow_metadata:
+                args['message_id'] = workflow_metadata['mid']
+            if 'control_channels' in workflow_metadata:
+                args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
+                                            workflow_metadata['control_channels']]
+            if 'chat_messages' in workflow_metadata:
+                args['chat_messages'] = [GPTMessage.from_dict(message_dict) for message_dict in
+                                         workflow_metadata['chat_messages']]
 
             return self.create_workflow(**args)
 
@@ -323,7 +340,7 @@ class MyClient(discord.Client):
             return
 
     async def _create_conversation(self, prefix, message: discord.Message):
-        # Create a private thread in the message channel
+        # Create a public thread
         thread = await message.channel.create_thread(
             name=message.author.name + ": " + message.content[:20],
             type=ChannelType.public_thread,
@@ -337,7 +354,6 @@ class MyClient(discord.Client):
             str(thread.id),
             DuckResponseFlow(thread, message.id, self.control_channels, messages)
         )
-        # TODO::Should we handle messages that finish out of the gate?
 
     async def _continue_conversation(self, thread_id, text: str):
         # Get the conversation
@@ -355,11 +371,10 @@ class MyClient(discord.Client):
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
-def main(prompts: Path, log_file: Path):
+def main(prompts: Path, log_file: Path, saved_state: Path):
     # create client
     client = MyClient(prompts, log_file)
-    # set path for saved state and init workflow manager
-    saved_state = Path('saved-state')
+    # init workflow manager
     saved_state.mkdir(exist_ok=True, parents=True)
     workflow_manager = WorkflowManager(
         JsonMetadataSerializer(saved_state),
@@ -377,8 +392,9 @@ def main(prompts: Path, log_file: Path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--prompts', type=Path, default='prompts')
-    parser.add_argument('--log-file', type=Path, default='/tmp/duck.log')
+    parser.add_argument('--prompts', '-p', type=Path, default='prompts')
+    parser.add_argument('--log-file', '-l', type=Path, default='/tmp/duck.log')
+    parser.add_argument('--save-folder', '-s', type=Path, default='saved-state')
     args = parser.parse_args()
     logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
-    main(args.prompts, args.log_file)
+    main(args.prompts, args.log_file, args.saved_state)
