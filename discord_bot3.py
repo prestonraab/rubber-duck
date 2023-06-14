@@ -380,5 +380,5 @@ if __name__ == '__main__':
     parser.add_argument('--prompts', type=Path, default='prompts')
     parser.add_argument('--log-file', type=Path, default='/tmp/duck.log')
     args = parser.parse_args()
-    logging.basicConfig(filename=args.log_file, force=True)
+    logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
     main(args.prompts, args.log_file)
