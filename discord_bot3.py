@@ -128,15 +128,14 @@ class DuckResponseFlow:
                 response = 'RubberDuck encountered an error.'
 
             # send the model's response to the Discord channel
-            await self.display(response)
+            #await self.display(response)
+            await send(self.thread, response)
 
     @quest_signal(CHAT_EVENT_NAME)
     async def query(self, message_text: str):
         """
         Query the OPENAI API
         """
-        logging.debug(f"User said: {message_text}")
-
         self.chat_messages.append(dict(role='user', content=message_text))
 
         completion = await openai.ChatCompletion.acreate(
