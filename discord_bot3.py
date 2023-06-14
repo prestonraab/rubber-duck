@@ -398,4 +398,4 @@ if __name__ == '__main__':
     parser.add_argument('--save-folder', '-s', type=Path, default='saved-state')
     args = parser.parse_args()
     logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
-    main(args.prompts, args.log_file, args.saved_state)
+    main(args.prompts, args.log_file, args.save_folder)
