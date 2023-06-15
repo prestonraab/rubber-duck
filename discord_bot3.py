@@ -289,6 +289,10 @@ class MyClient(discord.Client):
         self._load_prompts(prompt_dir)
         self.guild_dict = {}  # Loaded in on_ready
 
+        self._load_control_channels(self.config)
+        for channel in self.control_channels:
+            await send(channel, 'Duck online')
+
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
         for file in prompt_dir.iterdir():
@@ -322,9 +326,6 @@ class MyClient(discord.Client):
         logging.info(self.user.id)
         logging.info('------')
 
-        self._load_control_channels(self.config)
-        for channel in self.control_channels:
-            await send(channel, 'Duck online')
 
     async def on_message(self, message: discord.Message):
         """
