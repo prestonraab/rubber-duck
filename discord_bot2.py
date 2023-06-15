@@ -304,7 +304,7 @@ class MyClient(discord.Client):
         await asyncio.sleep(PURGE_TIMEOUT.seconds)
         await conversation.thread.send(
             f"This conversation has been inactive for {PURGE_TIMEOUT.seconds} seconds and will close in 1 minute.")
-        await asyncio.sleep(60)
+        await asyncio.sleep(10)
         self._serialize_conversation(conversation)
         await self.purge_conversation(conversation)
 
