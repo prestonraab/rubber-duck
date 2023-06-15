@@ -266,7 +266,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
 
 
 class MyClient(discord.Client):
-    def __init__(self, prompt_dir: Path, log_file: Path):
+    def __init__(self, prompt_dir: Path, config: Path, log_file: Path):
         # adding intents module to prevent intents error in __init__ method in newer versions of Discord.py
         intents = discord.Intents.default()  # Select all the intents in your bot settings as it's easier
         intents.message_content = True
@@ -274,6 +274,8 @@ class MyClient(discord.Client):
 
         self.workflow_manager = None
         self.log_file = log_file
+
+        self._load_control_channels(config)
 
         self._load_prompts(prompt_dir)
         self.guild_dict = {}  # Loaded in on_ready
@@ -301,7 +303,6 @@ class MyClient(discord.Client):
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
 
-        self._load_control_channels()
         # contextualize members
         self.workflow_manager.load_workflows()
         await self.workflow_manager.resume_workflows()
@@ -374,16 +375,16 @@ class MyClient(discord.Client):
     def set_workflow_manager(self, workflow_manager: WorkflowManager):
         self.workflow_manager = workflow_manager
 
-    def _load_control_channels(self):
-        with open('config.json') as file:
+    def _load_control_channels(self, config_file: Path):
+        with open(config_file) as file:
             config = json.load(file)
         self.control_channel_ids = config['control_channels']
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
 
-def main(prompts: Path, log_file: Path, saved_state: Path):
+def main(prompts: Path, log_file: Path, config:Path, saved_state: Path):
     # create client
-    client = MyClient(prompts, log_file)
+    client = MyClient(prompts, config, log_file)
     # init workflow manager
     saved_state.mkdir(exist_ok=True, parents=True)
     workflow_manager = WorkflowManager(
@@ -405,6 +406,7 @@ if __name__ == '__main__':
     parser.add_argument('--prompts', '-p', type=Path, default='prompts')
     parser.add_argument('--log-file', '-l', type=Path, default='/tmp/duck.log')
     parser.add_argument('--save-folder', '-s', type=Path, default='saved-state')
+    parser.add_argument('--config', '-c', type=Path, default='config.json')
     args = parser.parse_args()
     logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
-    main(args.prompts, args.log_file, args.save_folder)
+    main(args.prompts, args.log_file, args.config, args.save_folder)
