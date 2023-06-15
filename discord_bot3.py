@@ -285,6 +285,7 @@ class MyClient(discord.Client):
         self.workflow_manager = None
         self.log_file = log_file
         self.config = config
+        self._load_control_channels(config)
 
         self._load_prompts(prompt_dir)
         self.guild_dict = {}  # Loaded in on_ready
