@@ -238,7 +238,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         duck_response_flow = workflow._func
 
         if hasattr(duck_response_flow, 'message_id'):
-            metadata["message_id"] = duck_response_flow .message_id
+            metadata["message_id"] = duck_response_flow.message_id
 
         if hasattr(duck_response_flow, 'control_channels'):
             metadata["control_channels"] = [str(channel.id) for channel in duck_response_flow.control_channels]
