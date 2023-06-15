@@ -361,6 +361,7 @@ class MyClient(discord.Client):
         messages = [
             dict(role='system', content=prefix or message.content)
         ]
+        await thread.send(f"My control channels are {', '.join([c.mention for c in self.control_channels])}")
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
             DuckResponseFlow(thread, message.id, self.control_channels, messages)
