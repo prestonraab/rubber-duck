@@ -95,7 +95,8 @@ class DuckResponseFlow:
         response = response_message['content'].strip()
         logging.debug(f"Response: {response}")
 
-        await self.display_control(response_message['role'] + ': ' + response)
+        for channel in self.control_channels:
+            await send(channel, response_message['role'] + ': ' + response)
 
         self.chat_messages.append(response_message)
         return response
