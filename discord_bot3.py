@@ -45,13 +45,19 @@ class DuckResponseFlow:
         self.chat_messages: list[GPTMessage] = chat_messages
         self.initial_message_id = message_id
         self.control_channels = control_channels
+        self.fast = False
 
     async def __call__(self):
         user_response = await self.prompt("How can I help you?")
 
         while True:
+            if 'fast' in user_response.lower():
+                self.fast = True
             async with self.thread.typing():
-                response = await self.query(user_response)
+                if self.fast:
+                    response = await self.query(user_response, fast=True)
+                else:
+                    response = await self.query(user_response)
                 if not response:
                     response = 'RubberDuck encountered an error.'
 
@@ -71,14 +77,14 @@ class DuckResponseFlow:
         ...
 
     @event
-    async def query(self, message_text: str):
+    async def query(self, message_text: str, fast = False):
         """
         Query the OPENAI API
         """
         self.chat_messages.append(dict(role='user', content=message_text))
 
         completion = await openai.ChatCompletion.acreate(
-            model=AI_ENGINE,
+            model=AI_ENGINE if not fast else "gpt-3.5-turbo",
             messages=self.chat_messages
         )
         logging.debug(f"Completion: {completion}")
