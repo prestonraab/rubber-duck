@@ -88,7 +88,6 @@ class DuckResponseFlow:
         logging.debug(f"Response: {response}")
 
         self.chat_messages.append(response_message)
-
         return response
 
     @event
@@ -97,7 +96,6 @@ class DuckResponseFlow:
             await channel.send(text)
 
     async def respond(self, message_text: str):
-
         """
         Use the OPNENAI API to continue the conversation
         """
@@ -319,6 +317,10 @@ class MyClient(discord.Client):
         # ignore messages from the bot itself
         if message.author == self.user:
             return
+
+        for attachment in message.attachments:
+            if attachment.filename.endswith('.txt'):
+                message.content += '\n' + (await attachment.read()).decode('utf-8')
 
         if message.content.startswith('//'):
             return
