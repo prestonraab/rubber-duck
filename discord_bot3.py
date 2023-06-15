@@ -221,14 +221,14 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         # Serialize workflow to specified folder location with metadata
         # create a dict to serialize
         metadata = {"tid": workflow_id, "wid": workflow_id}
-        if workflow.thread:
-            metadata["tid"] = str(workflow.thread.id)
-        if workflow.message_id:
-            metadata["mid"] = workflow.message_id
-        if workflow.control_channels:
-            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
-        if workflow.chat_messages:
-            metadata["chat_messages"] = [message.to_dict() for message in workflow.chat_messages]
+        # if workflow.thread:
+        #     metadata["tid"] = str(workflow.thread.id)
+        # if workflow.message_id:
+        #     metadata["mid"] = workflow.message_id
+        # if workflow.control_channels:
+        #     metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
+        # if workflow.chat_messages:
+        #     metadata["chat_messages"] = [message.to_dict() for message in workflow.chat_messages]
 
         file_to_save = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_save, 'w') as file:
@@ -242,14 +242,14 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             args = {}
             if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
-            if 'mid' in workflow_metadata:
-                args['message_id'] = workflow_metadata['mid']
-            if 'control_channels' in workflow_metadata:
-                args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
-                                            workflow_metadata['control_channels']]
-            if 'chat_messages' in workflow_metadata:
-                args['chat_messages'] = [GPTMessage.from_dict(message_dict) for message_dict in
-                                         workflow_metadata['chat_messages']]
+            # if 'mid' in workflow_metadata:
+            #     args['message_id'] = workflow_metadata['mid']
+            # if 'control_channels' in workflow_metadata:
+            #     args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
+            #                                 workflow_metadata['control_channels']]
+            # if 'chat_messages' in workflow_metadata:
+            #     args['chat_messages'] = [GPTMessage.from_dict(message_dict) for message_dict in
+            #                              workflow_metadata['chat_messages']]
 
             return self.create_workflow(**args)
 
@@ -352,8 +352,7 @@ class MyClient(discord.Client):
         ]
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
-            DuckResponseFlow,
-            thread, message.id, self.control_channels, messages
+            DuckResponseFlow(thread, message.id, self.control_channels, messages)
         )
 
     async def _continue_conversation(self, thread_id, text: str):
