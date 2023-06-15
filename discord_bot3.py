@@ -310,7 +310,7 @@ class MyClient(discord.Client):
         logging.info(self.user.id)
         logging.info('------')
         for channel in self.control_channels:
-            await channel.send('Duck online')
+            await send(channel, 'Duck online')
 
     async def on_message(self, message: discord.Message):
         """
