@@ -257,7 +257,6 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             workflow_metadata = json.load(file)
             logging.log(logging.INFO, f"Deserializing {workflow_metadata}")
             args = {}
-            #args['message_id'] = 1234
             if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
             if 'message_id' in workflow_metadata:
