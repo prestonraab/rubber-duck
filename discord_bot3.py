@@ -256,7 +256,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
             args = {}
-            args['message_id'] = 1234
+            #args['message_id'] = 1234
             if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
             if 'mid' in workflow_metadata:
