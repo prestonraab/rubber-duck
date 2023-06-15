@@ -239,8 +239,10 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         #
         # if workflow.thread:
         #     metadata["tid"] = str(workflow.thread.id)
+
         if hasattr(workflow, 'message_id'):
-            metadata["mid"] = workflow.message_id
+            metadata["message_id"] = workflow.message_id
+
         # if workflow.control_channels:
         #     metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
         # if workflow.chat_messages:
@@ -255,12 +257,13 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
+            logging.log(logging.INFO, f"Deserializing {workflow_metadata}")
             args = {}
             #args['message_id'] = 1234
             if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
-            if 'mid' in workflow_metadata:
-                args['message_id'] = workflow_metadata['mid']
+            if 'message_id' in workflow_metadata:
+                args['message_id'] = workflow_metadata['message_id']
             if 'control_channels' in workflow_metadata:
                 args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
                                             workflow_metadata['control_channels']]
