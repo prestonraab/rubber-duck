@@ -233,7 +233,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         #
         # if workflow.thread:
         #     metadata["tid"] = str(workflow.thread.id)
-        if workflow.message_id:
+        if hasattr(workflow, 'message_id'):
             metadata["mid"] = workflow.message_id
         # if workflow.control_channels:
         #     metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
