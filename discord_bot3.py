@@ -62,6 +62,7 @@ class DuckResponseFlow:
                 if not response:
                     response = 'RubberDuck encountered an error.'
 
+            await self.display(f"My control channels are: {self.control_channels}")
             user_response = await self.prompt(response)
 
     async def prompt(self, prompt: str):
