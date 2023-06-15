@@ -404,8 +404,8 @@ def main(prompts: Path, log_file: Path, config:Path, saved_state: Path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prompts', '-p', type=Path, default='prompts')
-    parser.add_argument('--log-file', '-l', type=Path, default='/tmp/duck.log')
-    parser.add_argument('--save-folder', '-s', type=Path, default='saved-state')
+    parser.add_argument('--log_file', '-l', type=Path, default='/tmp/duck.log')
+    parser.add_argument('--save_folder', '-s', type=Path, default='saved-state')
     parser.add_argument('--config', '-c', type=Path, default='config.json')
     args = parser.parse_args()
     logging.basicConfig(filename=args.log_file, level=logging.DEBUG)
