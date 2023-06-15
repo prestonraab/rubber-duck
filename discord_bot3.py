@@ -228,10 +228,13 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         # Serialize workflow to specified folder location with metadata
         # create a dict to serialize
         metadata = {"tid": workflow_id, "wid": workflow_id}
+
+        # workflow_metadata = workflow.to_dict()
+        #
         # if workflow.thread:
         #     metadata["tid"] = str(workflow.thread.id)
-        # if workflow.message_id:
-        #     metadata["mid"] = workflow.message_id
+        if workflow.message_id:
+            metadata["mid"] = workflow.message_id
         # if workflow.control_channels:
         #     metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
         # if workflow.chat_messages:
@@ -249,11 +252,11 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             args = {}
             if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
-            # if 'mid' in workflow_metadata:
-            #     args['message_id'] = workflow_metadata['mid']
-            # if 'control_channels' in workflow_metadata:
-            #     args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
-            #                                 workflow_metadata['control_channels']]
+            if 'mid' in workflow_metadata:
+                args['message_id'] = workflow_metadata['mid']
+            if 'control_channels' in workflow_metadata:
+                args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
+                                            workflow_metadata['control_channels']]
             # if 'chat_messages' in workflow_metadata:
             #     args['chat_messages'] = [GPTMessage.from_dict(message_dict) for message_dict in
             #                              workflow_metadata['chat_messages']]
