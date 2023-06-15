@@ -12,6 +12,8 @@ from typing import TypedDict, Union
 
 from discord import ChannelType
 
+import asyncio
+
 logging.basicConfig(level=logging.DEBUG)
 
 # the Discord Python API
@@ -30,13 +32,27 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
-CONVERSATION_TIMEOUT = 60 * 3  # three minutes
-PURGE_TIMEOUT = timedelta(days=3)
+PURGE_TIMEOUT = timedelta(seconds=60 * 5)  # 5 minutes
 
 
 class GPTMessage(TypedDict):
     role: str
     content: str
+
+
+class Timer:
+    def __init__(self, interval, job, *args):
+        self._interval = interval
+        self._job = job
+        self._args = args
+        self._task = asyncio.ensure_future(self._job(*args))
+
+    def cancel(self):
+        self._task.cancel()
+
+    def restart(self):
+        self._task.cancel()
+        self._task = asyncio.ensure_future(self._job(*self._args))
 
 
 @dataclass
@@ -49,6 +65,10 @@ class Conversation:
     first_message: datetime
     last_message: datetime
     messages: list[GPTMessage]
+    timeout: Timer = None
+
+    def set_timeout(self, interval, job):
+        self.timeout = Timer(interval, job, self)
 
     def to_json(self):
         return {
@@ -182,6 +202,7 @@ async def continue_conversation(
     """
     Use the OPNENAI API to continue the conversation
     """
+    conversation.timeout.restart()
     thread = conversation.thread
 
     # while the bot is waiting on a response from the model
@@ -273,14 +294,19 @@ class MyClient(discord.Client):
         for conversation in self.conversations.values():
             if not conversation.is_active():
                 conversations_to_purge.append(conversation)
+            else:
+                # If the conversation is active, restart the timeout
+                conversation.timeout.restart()
         for conversation in conversations_to_purge:
             await self._purge_conversation(conversation)
 
-    async def _purge_messages(self):
-        # Purge old messages from channels not in self.control_channels
-        for channel in self.get_all_channels():
-            if channel not in self.control_channels and channel.name in self.prompts:
-                await channel.purge(before=datetime.now() - PURGE_TIMEOUT)
+    async def start_countdown(self, conversation: Conversation):
+        self._serialize_conversation(conversation)
+        await asyncio.sleep(PURGE_TIMEOUT.seconds)
+        await conversation.thread.send(
+            f"This conversation has been inactive for {PURGE_TIMEOUT.seconds} seconds and will close in 1 minute.")
+        await asyncio.sleep(60)
+        await self._purge_conversation(conversation)
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
@@ -295,10 +321,6 @@ class MyClient(discord.Client):
         logging.info('Purging inactive conversations')
         await self._purge_conversations()
         logging.info('Done purging inactive conversations')
-
-        logging.info('Purging messages')
-        await self._purge_messages()
-        logging.info('Done purging messages')
 
         # print out information when the bot wakes up
         logging.info('Logged in as')
@@ -362,16 +384,15 @@ class MyClient(discord.Client):
             await execute_command("touch /tmp/duck.log", message.channel)
 
         elif content.startswith('!status'):
-            await message.channel.send('I am alive.')
+            await message.channel.send('I am alive. :duck:')
 
         elif content.startswith('!ping'):
-            await message.channel.send('pong')
+            await message.channel.send('pong :ping_pong:')
 
         elif content.startswith('!purge'):
             await message.channel.send('Purging inactive conversations')
             self.__exit__()  # Serialize conversations again to update last_message
             await self._purge_conversations()
-            await self._purge_messages()
             await message.channel.send('Done purging inactive conversations')
 
         elif content.startswith('!help'):
@@ -408,7 +429,7 @@ class MyClient(discord.Client):
             ]
         )
         self.conversations[thread.id] = conversation
-
+        conversation.set_timeout(PURGE_TIMEOUT, self.start_countdown)
         async with thread.typing():
             await thread.send(welcome)
 
