@@ -241,10 +241,10 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             metadata["message_id"] = duck_response_flow .message_id
 
         if hasattr(duck_response_flow, 'control_channels'):
-            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
+            metadata["control_channels"] = [str(channel.id) for channel in duck_response_flow.control_channels]
 
         if hasattr(duck_response_flow, 'chat_messages'):
-            metadata["chat_messages"] = [message.to_dict() for message in workflow.chat_messages]
+            metadata["chat_messages"] = [message.to_dict() for message in duck_response_flow.chat_messages]
 
         file_to_save = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_save, 'w') as file:
