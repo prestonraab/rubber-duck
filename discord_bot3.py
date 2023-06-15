@@ -44,7 +44,7 @@ class DuckResponseFlow:
                  chat_messages: list[GPTMessage] = None):
         self.thread = thread
         self.chat_messages: list[GPTMessage] = chat_messages
-        self.initial_message_id = message_id
+        self.message_id = message_id
         self.control_channels = control_channels
         self.fast = False
 
