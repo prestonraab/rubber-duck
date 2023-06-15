@@ -277,7 +277,7 @@ class MyClient(discord.Client):
         except Exception as ex:
             logging.exception(f"Unable to load conversation: {filename}")
 
-    async def _purge_conversation(self, conversation: Conversation):
+    async def purge_conversation(self, conversation: Conversation):
         # Purge conversation from self.conversations_dir, and delete the Discord thread
         filename = f'{conversation.guild_id}_{conversation.thread_id}.json'
         logging.debug(f'Purging conversation {filename}')
@@ -288,7 +288,7 @@ class MyClient(discord.Client):
         except Exception as ex:
             logging.exception(f"Unable to purge conversation: {filename}")
 
-    async def _purge_conversations(self):
+    async def purge_conversations(self):
         # Purge inactive conversations
         conversations_to_purge = []
         for conversation in self.conversations.values():
@@ -298,7 +298,7 @@ class MyClient(discord.Client):
                 # If the conversation is active, restart the timeout
                 conversation.timeout.restart()
         for conversation in conversations_to_purge:
-            await self._purge_conversation(conversation)
+            await self.purge_conversation(conversation)
 
     async def start_countdown(self, conversation: Conversation):
         self._serialize_conversation(conversation)
@@ -306,7 +306,7 @@ class MyClient(discord.Client):
         await conversation.thread.send(
             f"This conversation has been inactive for {PURGE_TIMEOUT.seconds} seconds and will close in 1 minute.")
         await asyncio.sleep(60)
-        await self._purge_conversation(conversation)
+        await self.purge_conversation(conversation)
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
@@ -319,7 +319,7 @@ class MyClient(discord.Client):
         logging.info('Done loading conversations')
 
         logging.info('Purging inactive conversations')
-        await self._purge_conversations()
+        await self.purge_conversations()
         logging.info('Done purging inactive conversations')
 
         # print out information when the bot wakes up
@@ -392,7 +392,7 @@ class MyClient(discord.Client):
         elif content.startswith('!purge'):
             await message.channel.send('Purging inactive conversations')
             self.__exit__()  # Serialize conversations again to update last_message
-            await self._purge_conversations()
+            await self.purge_conversations()
             await message.channel.send('Done purging inactive conversations')
 
         elif content.startswith('!help'):
