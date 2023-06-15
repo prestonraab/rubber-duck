@@ -32,7 +32,7 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
-PURGE_TIMEOUT = timedelta(seconds=60 * 5)  # 5 minutes
+PURGE_TIMEOUT = timedelta(seconds=10)  # 5 minutes
 
 
 class GPTMessage(TypedDict):
@@ -301,11 +301,11 @@ class MyClient(discord.Client):
             await self.purge_conversation(conversation)
 
     async def start_countdown(self, conversation: Conversation):
-        self._serialize_conversation(conversation)
         await asyncio.sleep(PURGE_TIMEOUT.seconds)
         await conversation.thread.send(
             f"This conversation has been inactive for {PURGE_TIMEOUT.seconds} seconds and will close in 1 minute.")
         await asyncio.sleep(60)
+        self._serialize_conversation(conversation)
         await self.purge_conversation(conversation)
 
     async def on_ready(self):
