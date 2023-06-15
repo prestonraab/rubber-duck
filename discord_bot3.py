@@ -265,9 +265,9 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             if 'control_channels' in workflow_metadata:
                 args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
                                             workflow_metadata['control_channels']]
-            # if 'chat_messages' in workflow_metadata:
-            #     args['chat_messages'] = [GPTMessage.from_dict(message_dict) for message_dict in
-            #                              workflow_metadata['chat_messages']]
+            if 'chat_messages' in workflow_metadata:
+                args['chat_messages'] = [GPTMessage.from_dict(message_dict) for message_dict in
+                                         workflow_metadata['chat_messages']]
 
             return self.create_workflow(**args)
 
