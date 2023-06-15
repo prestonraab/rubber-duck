@@ -40,6 +40,12 @@ class GPTMessage(TypedDict):
 
 
 class DuckResponseFlow:
+    thread: discord.Thread
+    chat_messages: list[GPTMessage]
+    message_id: int
+    control_channels: list[discord.TextChannel]
+    fast: bool
+
     def __init__(self, thread, message_id, control_channels: list[discord.TextChannel],
                  chat_messages: list[GPTMessage] = None):
         self.thread = thread
@@ -278,8 +284,7 @@ class MyClient(discord.Client):
 
         self.workflow_manager = None
         self.log_file = log_file
-
-        self._load_control_channels(config)
+        self.config = config
 
         self._load_prompts(prompt_dir)
         self.guild_dict = {}  # Loaded in on_ready
@@ -300,6 +305,7 @@ class MyClient(discord.Client):
     def __exit__(self, exc_type, exc_val, exc_tb):
         # make sure the state is saved in workflow manager
         self.workflow_manager.save_workflows()
+
     def _handle_interrupt(self, signum=None, frame=None):
         self.__exit__(None, None, None)
         exit()
@@ -315,6 +321,8 @@ class MyClient(discord.Client):
         logging.info(self.user.name)
         logging.info(self.user.id)
         logging.info('------')
+
+        self._load_control_channels(self.config)
         for channel in self.control_channels:
             await send(channel, 'Duck online')
 
