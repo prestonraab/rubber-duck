@@ -31,6 +31,7 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
+FAST_AI_ENGINE = 'gpt-3.5-turbo'
 
 
 class GPTMessage(TypedDict):
@@ -77,14 +78,14 @@ class DuckResponseFlow:
         ...
 
     @event
-    async def query(self, message_text: str, fast= False):
+    async def query(self, message_text: str, fast=False):
         """
         Query the OPENAI API
         """
         self.chat_messages.append(dict(role='user', content=message_text))
 
         completion = await openai.ChatCompletion.acreate(
-            model=AI_ENGINE if not fast else "gpt-3.5-turbo",
+            model=FAST_AI_ENGINE if fast else AI_ENGINE,
             messages=self.chat_messages
         )
         logging.debug(f"Completion: {completion}")
@@ -92,6 +93,8 @@ class DuckResponseFlow:
         response_message = completion.choices[0]['message']
         response = response_message['content'].strip()
         logging.debug(f"Response: {response}")
+
+        await self.display_control(response_message['role'] + ': ' + response)
 
         self.chat_messages.append(response_message)
         return response
@@ -112,6 +115,7 @@ class DuckResponseFlow:
 
             if not response:
                 response = 'RubberDuck encountered an error.'
+                await self.display_control(response)
 
             # send the model's response to the Discord channel
             # await self.display(response)
@@ -133,10 +137,7 @@ def parse_blocks(text: str, limit=2000):
         block += ('\n' + line) if block else line
 
         if line.strip().startswith(tick * 3):
-            if current_fence:
-                current_fence = ""
-            else:
-                current_fence = line
+            current_fence = "" if current_fence else line
 
     if block:
         yield block
