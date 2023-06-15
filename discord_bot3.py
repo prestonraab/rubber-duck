@@ -233,12 +233,15 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
     def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
         # Serialize workflow to specified folder location with metadata
         # create a dict to serialize
-        metadata = {"tid": workflow_id, "wid": workflow_id}
+        metadata = {"tid": workflow_id, "wid": workflow_id, "hey there" : "hi"}
 
         # workflow_metadata = workflow.to_dict()
         #
         # if workflow.thread:
         #     metadata["tid"] = str(workflow.thread.id)
+
+        logging.log(logging.INFO, f"Function attributes: {workflow.__dict__}")
+        logging.log(logging.INFO, f"Calling serialize workflow_id: {workflow_id}")
 
         if hasattr(workflow, 'message_id'):
             metadata["message_id"] = workflow.message_id
