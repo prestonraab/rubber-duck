@@ -77,7 +77,7 @@ class DuckResponseFlow:
         ...
 
     @event
-    async def query(self, message_text: str, fast = False):
+    async def query(self, message_text: str, fast= False):
         """
         Query the OPENAI API
         """
@@ -108,7 +108,7 @@ class DuckResponseFlow:
         # while the bot is waiting on a response from the model
         # set its status as typing for user-friendliness
         async with self.thread.typing():
-            response = await self.query(self.chat_messages, message_text)
+            response = await self.query(message_text)
 
             if not response:
                 response = 'RubberDuck encountered an error.'
@@ -291,7 +291,6 @@ class MyClient(discord.Client):
     def __exit__(self, exc_type, exc_val, exc_tb):
         # make sure the state is saved in workflow manager
         self.workflow_manager.save_workflows()
-
     def _handle_interrupt(self, signum=None, frame=None):
         self.__exit__(None, None, None)
         exit()
