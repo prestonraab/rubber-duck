@@ -205,7 +205,6 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
-            logging.log(logging.INFO, f"Deserializing {workflow_metadata}")
             args = {}
             if 'tid' in workflow_metadata:
                 args['thread'] = self.get_thread(workflow_metadata['tid'])
