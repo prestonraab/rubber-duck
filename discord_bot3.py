@@ -21,7 +21,7 @@ INPUT_EVENT_NAME = 'get_input'
 
 
 def load_env():
-    with open('.env') as f:
+    with open('secrets.env') as f:
         for line in f:
             key, value = line.strip().split('=')
             os.environ[key] = value
