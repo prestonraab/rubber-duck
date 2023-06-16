@@ -1,4 +1,4 @@
 *.env
 .idea/
 /conversations/
-saved-state/*
+/saved-state/
