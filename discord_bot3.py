@@ -52,23 +52,16 @@ class DuckResponseFlow:
         self.chat_messages: list[GPTMessage] = chat_messages
         self.message_id = message_id
         self.control_channels = control_channels
-        self.fast = False
 
     async def __call__(self):
         user_response = await self.prompt("How can I help you?")
 
         while True:
-            if 'fast' in user_response.lower():
-                self.fast = True
             async with self.thread.typing():
-                if self.fast:
-                    response = await self.query(user_response, fast=True)
-                else:
-                    response = await self.query(user_response)
+                response = await self.query(user_response)
                 if not response:
                     response = 'RubberDuck encountered an error.'
 
-            await self.display(f"My control channels are: {self.control_channels}")
             user_response = await self.prompt(response)
 
     async def prompt(self, prompt: str):
@@ -85,14 +78,14 @@ class DuckResponseFlow:
         ...
 
     @event
-    async def query(self, message_text: str, fast=False):
+    async def query(self, message_text: str):
         """
         Query the OPENAI API
         """
         self.chat_messages.append(dict(role='user', content=message_text))
 
         completion = await openai.ChatCompletion.acreate(
-            model=FAST_AI_ENGINE if fast else AI_ENGINE,
+            model=FAST_AI_ENGINE,
             messages=self.chat_messages
         )
         logging.debug(f"Completion: {completion}")
@@ -101,9 +94,6 @@ class DuckResponseFlow:
         response = response_message['content'].strip()
         logging.debug(f"Response: {response}")
 
-        for channel in self.control_channels:
-            await send(channel, response_message['role'] + ': ' + response)
-
         self.chat_messages.append(response_message)
         return response
 
@@ -111,23 +101,6 @@ class DuckResponseFlow:
     async def display_control(self, text: str):
         for channel in self.control_channels:
             await channel.send(text)
-
-    async def respond(self, message_text: str):
-        """
-        Use the OPNENAI API to continue the conversation
-        """
-        # while the bot is waiting on a response from the model
-        # set its status as typing for user-friendliness
-        async with self.thread.typing():
-            response = await self.query(message_text)
-
-            if not response:
-                response = 'RubberDuck encountered an error.'
-                await self.display_control(response)
-
-            # send the model's response to the Discord channel
-            # await self.display(response)
-            await send(self.thread, response)
 
 
 def parse_blocks(text: str, limit=2000):
@@ -211,7 +184,7 @@ async def control_on_message(message, log_file: Path):
     elif content.startswith('!log'):
         await message.channel.send(file=discord.File(log_file))
 
-    elif content.startswith('!rmlog') or content.startswith('!rm log'):
+    elif content.startswith('!rm log'):
         await execute_command("rm " + str(log_file), message.channel)
         await execute_command("touch " + str(log_file), message.channel)
 
@@ -231,9 +204,9 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         self.discord_client = discord_client
 
     def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
-        # Serialize workflow to specified folder location with metadata
-        # create a dict to serialize
-        metadata = {"tid": workflow_id, "wid": workflow_id, "hey there" : "hi"}
+        # Serialize workflow to "workflow" + workflow_id + ".json"
+        # workflow is the workflow_object, attributes can be tested for existence with hasattr
+        metadata = {"tid": workflow_id, "wid": workflow_id}
 
         duck_response_flow = workflow._func
 
@@ -251,7 +224,8 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             json.dump(metadata, file)
 
     def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
-        # Load the file with key
+        # Loads workflow from "workflow" + workflow_id + ".json"
+        # Uses the create_workflow function to create a new workflow object
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
@@ -268,6 +242,8 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
                 args['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
                                          workflow_metadata['chat_messages']]
 
+            # Unpacks the args dictionary into keyword arguments
+            # The create_workflow function is the constructor of the workflow object
             return self.create_workflow(**args)
 
     def get_thread(self, tid) -> discord.Thread:
@@ -289,7 +265,6 @@ class MyClient(discord.Client):
 
         self._load_prompts(prompt_dir)
         self.guild_dict = {}  # Loaded in on_ready
-
 
     def _load_prompts(self, prompt_dir: Path):
         self.prompts = {}
@@ -327,7 +302,6 @@ class MyClient(discord.Client):
         self._load_control_channels(self.config)
         for channel in self.control_channels:
             await send(channel, 'Duck online')
-
 
     async def on_message(self, message: discord.Message):
         """
