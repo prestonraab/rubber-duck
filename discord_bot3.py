@@ -173,30 +173,6 @@ async def restart(message):
     return
 
 
-async def control_on_message(message, log_file: Path):
-    """
-    This function is called whenever the bot sees a message in a control channel
-    """
-    content = message.content
-    if content.startswith('!restart'):
-        await restart(message)
-
-    elif content.startswith('!log'):
-        await message.channel.send(file=discord.File(log_file))
-
-    elif content.startswith('!rm log'):
-        await execute_command("rm " + str(log_file), message.channel)
-        await execute_command("touch " + str(log_file), message.channel)
-
-    elif content.startswith('!status'):
-        await message.channel.send('🦆')
-
-    elif content.startswith('!help'):
-        await display_help(message)
-    elif content.startswith('!'):
-        await message.channel.send('Unknown command. Try !help')
-
-
 class DiscordWorkflowSerializer(WorkflowSerializer):
     def __init__(self, create_workflow: Callable[[], WorkflowFunction], discord_client: discord.Client, folder: Path):
         self.create_workflow = create_workflow
@@ -324,7 +300,7 @@ class MyClient(discord.Client):
             return
 
         if message.channel.id in self.control_channel_ids:
-            await control_on_message(message, self.log_file)
+            await self.control_on_message(message, self.log_file)
             return
 
         # if the message is in a listen channel, create a thread
@@ -369,6 +345,30 @@ class MyClient(discord.Client):
             config = json.load(file)
         self.control_channel_ids = config['control_channels']
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
+
+    async def control_on_message(self, message, log_file: Path):
+        """
+        This function is called whenever the bot sees a message in a control channel
+        """
+        content = message.content
+        if content.startswith('!restart'):
+            await restart(message)
+
+        elif content.startswith('!log'):
+            await message.channel.send(file=discord.File(log_file))
+
+        elif content.startswith('!rm log'):
+            await execute_command("rm " + str(log_file), message.channel)
+            await execute_command("touch " + str(log_file), message.channel)
+
+        elif content.startswith('!status'):
+            await message.channel.send('🦆')
+
+        elif content.startswith('!help'):
+            await display_help(message)
+
+        elif content.startswith('!'):
+            await message.channel.send('Unknown command. Try !help')
 
 
 def main(prompts: Path, log_file: Path, config:Path, saved_state: Path):
