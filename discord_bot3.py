@@ -166,7 +166,7 @@ class DuckResponseFlow:
             try:
                 function_to_call = available_functions[function_name]
                 function_args = json.loads(response_message["function_call"]["arguments"])
-                function_response = function_to_call(**function_args)
+                function_response = await function_to_call(**function_args)
             except Exception as e:
                 logging.error(f"Error calling function: {e}")
                 function_response = "Error calling function."
