@@ -179,10 +179,6 @@ class DuckResponseFlow:
                     content=function_response
                 )
             )  # extend conversation with function response
-        response = response_message['content'].strip()
-        logging.debug(f"Response: {response}")
-
-        return response
 
     @event
     async def display_control(self, text: str):
