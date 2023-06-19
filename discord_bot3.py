@@ -10,7 +10,7 @@ from discord import ChannelType
 import openai
 import argparse
 
-from typing import Callable, TypedDict, Union, Any, NotRequired
+from typing import Callable, TypedDict, Union, Any, Optional
 
 from quest import event, signal as quest_signal
 from quest.workflow_manager import WorkflowSerializer, WorkflowManager
@@ -37,7 +37,7 @@ FAST_AI_ENGINE = 'gpt-3.5-turbo-0613'
 class GPTMessage(TypedDict):
     role: str
     content: str
-    name: NotRequired[str]
+    name: Optional[str]
 
 
 class GPTFunction(TypedDict):
