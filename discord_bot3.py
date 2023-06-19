@@ -85,7 +85,7 @@ class DuckResponseFlow:
         self.chat_messages.append(dict(role='user', content=message_text))
 
         completion = await openai.ChatCompletion.acreate(
-            model=FAST_AI_ENGINE,
+            model=AI_ENGINE,
             messages=self.chat_messages
         )
         logging.debug(f"Completion: {completion}")
