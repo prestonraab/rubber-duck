@@ -118,9 +118,6 @@ class DuckResponseFlow:
             parameters={
                 "type": "object",
                 "properties": {
-                    "last_message": {
-                        "type": "string"
-                    }
                 }
             }),
             GPTFunction(
@@ -147,7 +144,7 @@ class DuckResponseFlow:
                 })]
 
         completion = await openai.ChatCompletion.acreate(
-            messages=self.chat_messages + [dict(role='system', content=p)],
+            messages=self.chat_messages + [GPTMessage(role='system', content=p)],
             model=FAST_AI_ENGINE,
             functions=functions,
             function_call='auto'
@@ -199,8 +196,8 @@ class DuckResponseFlow:
         await self.display_control("Conversation ended.")
         await self.thread.delete()
 
-    async def get_assignment(self, location: str, unit: str):
-        await self.display_control(f"Retrieving assignment at {location} in unit {unit}.")
+    async def get_assignment(self, assignment_name: str):
+        await self.display_control(f"Retrieving assignment {assignment_name}.")
         return "Assignment retrieved."
 
     async def get_context(self, topic: str):
