@@ -3,6 +3,7 @@ import logging
 import os
 import signal
 import subprocess
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -41,11 +42,10 @@ class GPTMessage(TypedDict, total=False):
     name: str
 
 
-@dataclass
-class GPTParameters:
-    type = "object"
-    required: list[str] = field(default_factory=list)
-    properties: dict[str, dict[str:Any]] = field(default_factory=dict)
+class GPTParameters(defaultdict):
+    type: str = "object"
+    required: list[str]
+    properties: dict[str, dict[str:Any]]
 
 
 class GPTFunction(TypedDict):
