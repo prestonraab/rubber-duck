@@ -3,6 +3,7 @@ import logging
 import os
 import signal
 import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import discord
@@ -40,12 +41,19 @@ class GPTMessage(TypedDict):
     name: Optional[str]
 
 
+@dataclass
+class GPTParameters:
+    type = "object"
+    required: list[str] = field(default_factory=list)
+    properties: dict[str, dict[str:Any]] = field(default_factory=dict)
+
+
 class GPTFunction(TypedDict):
     # See this website for how to specify parameter types:
     # https://json-schema.org/understanding-json-schema/reference/object.html#properties
     name: str
     description: str
-    parameters: dict[str, Any]
+    parameters: GPTParameters
 
 
 class DuckResponseFlow:
@@ -111,36 +119,29 @@ class DuckResponseFlow:
         If answering the above question requires assignment-specific context, retrieve that assignment.
         If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.'''
 
-        functions = [GPTFunction(
-            name='end_conversation',
-            description='Delete the conversation history',
-            parameters={
-                "type": "object",
-                "properties": {
-                }
-            }),
+        functions = [
+            GPTFunction(
+                name='end_conversation',
+                description='Delete the conversation history',
+                parameters=GPTParameters()),
             GPTFunction(
                 name='get_assignment',
                 description='Retrieve an assignment',
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "assignment_name": {
-                            "type": "string"
-                        }
+                parameters=GPTParameters(
+                    properties={
+                        "assignment_name": {"type": "string"}
                     }
-                }),
+                )
+            ),
             GPTFunction(
                 name='get_context',
                 description='Retrieve context from the appropriate guide entry',
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "topic": {
-                            "type": "string"
-                        }
+                parameters=GPTParameters(
+                    properties={
+                        "topic": {"type": "string"}
                     }
-                })]
+                )
+            )]
 
         completion = await openai.ChatCompletion.acreate(
             messages=self.chat_messages[-1:] + [GPTMessage(role='system', content=p)],
@@ -198,7 +199,6 @@ class DuckResponseFlow:
         return f"Context retrieved for {topic}."
 
 
-
 def parse_blocks(text: str, limit=2000):
     tick = '`'
     block = ""
@@ -228,7 +228,7 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
 async def display_help(thread: Union[discord.Thread, discord.TextChannel]):
     await thread.send(
         "!restart - restart the bot\n"
-        "!hard restart - restart the bot and clear the conversations\n"
+        "!hard restart - restart the bot and clear the workflows\n"
         "!log - print the log file\n"
         "!rm log - remove the log file\n"
         "!status - print a status message\n"
@@ -277,6 +277,7 @@ async def hard_restart(message):
     """
     await execute_command('rm -f saved-state/*.json', message.channel)
     await restart(message)
+
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
     def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
