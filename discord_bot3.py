@@ -10,7 +10,7 @@ from discord import ChannelType
 import openai
 import argparse
 
-from typing import Callable, TypedDict, Union
+from typing import Callable, TypedDict, Union, Any
 
 from quest import event, signal as quest_signal
 from quest.workflow_manager import WorkflowSerializer, WorkflowManager
@@ -129,8 +129,8 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
         await thread.send(block)
 
 
-async def display_help(message):
-    await message.channel.send(
+async def display_help(thread: Union[discord.Thread, discord.TextChannel]):
+    await thread.send(
         "!restart - restart the bot\n"
         "!log - print the log file\n"
         "!rm log - remove the log file\n"
@@ -174,7 +174,8 @@ async def restart(message):
 
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
-    def __init__(self, create_workflow: Callable[[], WorkflowFunction], discord_client: discord.Client, folder: Path):
+    def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
+                 discord_client: discord.Client, folder: Path):
         self.create_workflow = create_workflow
         self.folder = folder
         self.discord_client = discord_client
@@ -203,21 +204,21 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
-            args = {}
+            kwargs = {}
             if 'tid' in workflow_metadata:
-                args['thread'] = self.get_thread(workflow_metadata['tid'])
+                kwargs['thread'] = self.get_thread(workflow_metadata['tid'])
             if 'message_id' in workflow_metadata:
-                args['message_id'] = workflow_metadata['message_id']
+                kwargs['message_id'] = workflow_metadata['message_id']
             if 'control_channels' in workflow_metadata:
-                args['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
-                                            workflow_metadata['control_channels']]
+                kwargs['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
+                                              workflow_metadata['control_channels']]
             if 'chat_messages' in workflow_metadata:
-                args['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
-                                         workflow_metadata['chat_messages']]
+                kwargs['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
+                                           workflow_metadata['chat_messages']]
 
             # Unpacks the args dictionary into keyword arguments
             # The create_workflow function is the constructor of the workflow object
-            return self.create_workflow(**args)
+            return self.create_workflow(**kwargs)
 
     def get_thread(self, tid) -> discord.Thread:
         thread = self.discord_client.get_channel(int(tid))
@@ -348,27 +349,28 @@ class MyClient(discord.Client):
         This function is called whenever the bot sees a message in a control channel
         """
         content = message.content
+        channel = message.channel
         if content.startswith('!restart'):
             await restart(message)
 
         elif content.startswith('!log'):
-            await message.channel.send(file=discord.File(log_file))
+            await channel.send(file=discord.File(log_file))
 
         elif content.startswith('!rm log'):
-            await execute_command("rm " + str(log_file), message.channel)
-            await execute_command("touch " + str(log_file), message.channel)
+            await execute_command("rm " + str(log_file), channel)
+            await execute_command("touch " + str(log_file), channel)
 
         elif content.startswith('!status'):
-            await message.channel.send('🦆')
+            await channel.send('🦆')
 
         elif content.startswith('!help'):
-            await display_help(message)
+            await display_help(channel)
 
         elif content.startswith('!'):
-            await message.channel.send('Unknown command. Try !help')
+            await channel.send('Unknown command. Try !help')
 
 
-def main(prompts: Path, log_file: Path, config:Path, saved_state: Path):
+def main(prompts: Path, log_file: Path, config: Path, saved_state: Path):
     # create client
     client = MyClient(prompts, config, log_file)
     # init workflow manager
