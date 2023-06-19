@@ -10,7 +10,7 @@ from discord import ChannelType
 import openai
 import argparse
 
-from typing import Callable, TypedDict, Union, Any
+from typing import Callable, TypedDict, Union, Any, NotRequired
 
 from quest import event, signal as quest_signal
 from quest.workflow_manager import WorkflowSerializer, WorkflowManager
@@ -31,12 +31,21 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
-FAST_AI_ENGINE = 'gpt-3.5-turbo'
+FAST_AI_ENGINE = 'gpt-3.5-turbo-0613'
 
 
 class GPTMessage(TypedDict):
     role: str
     content: str
+    name: NotRequired[str]
+
+
+class GPTFunction(TypedDict):
+    # See this website for how to specify parameter types:
+    # https://json-schema.org/understanding-json-schema/reference/object.html#properties
+    name: str
+    description: str
+    parameters: dict[str, Any]
 
 
 class DuckResponseFlow:
@@ -44,7 +53,6 @@ class DuckResponseFlow:
     chat_messages: list[GPTMessage]
     message_id: int
     control_channels: list[discord.TextChannel]
-    fast: bool
 
     def __init__(self, thread, message_id, control_channels: list[discord.TextChannel],
                  chat_messages: list[GPTMessage] = None):
@@ -58,7 +66,9 @@ class DuckResponseFlow:
 
         while True:
             async with self.thread.typing():
-                response = await self.query(user_response)
+                self.chat_messages.append(GPTMessage(role='user', content=user_response))
+                await self.act_on_category()
+                response = await self.query()
                 if not response:
                     response = 'RubberDuck encountered an error.'
 
@@ -78,15 +88,14 @@ class DuckResponseFlow:
         ...
 
     @event
-    async def query(self, message_text: str):
+    async def query(self):
         """
         Query the OPENAI API
         """
-        self.chat_messages.append(dict(role='user', content=message_text))
 
         completion = await openai.ChatCompletion.acreate(
-            model=AI_ENGINE,
-            messages=self.chat_messages
+            messages=self.chat_messages,
+            model=AI_ENGINE
         )
         logging.debug(f"Completion: {completion}")
 
@@ -98,9 +107,106 @@ class DuckResponseFlow:
         return response
 
     @event
+    async def act_on_category(self):
+        p = f'''If the above conversation is over, delete the conversation history.
+        If answering the above question requires assignment-specific context, retrieve that assignment.
+        If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.'''
+
+        functions = [GPTFunction(
+            name='end_conversation',
+            description='Delete the conversation history',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "last_message": {
+                        "type": "string"
+                    }
+                }
+            }),
+            GPTFunction(
+                name='get_assignment',
+                description='Retrieve an assignment',
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "assignment_name": {
+                            "type": "string"
+                        }
+                    }
+                }),
+            GPTFunction(
+                name='get_context',
+                description='Retrieve context from the appropriate guide entry',
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "topic": {
+                            "type": "string"
+                        }
+                    }
+                })]
+
+        completion = await openai.ChatCompletion.acreate(
+            messages=self.chat_messages + [dict(role='system', content=p)],
+            model=FAST_AI_ENGINE,
+            functions=functions,
+            function_call='auto'
+        )
+        logging.debug(f"Completion: {completion}")
+
+        response_message = completion.choices[0]['message']
+
+        # Step 2: check if GPT wanted to call a function
+        if response_message.get("function_call"):
+            # Step 3: call the function
+            # Note: the JSON response may not always be valid; be sure to handle errors
+            available_functions = {
+                "end_conversation": self.end_conversation,
+                "get_assignment": self.get_assignment,
+                "get_context": self.get_context
+            }
+            function_name = response_message["function_call"]["name"]
+            try:
+                function_to_call = available_functions[function_name]
+                function_args = json.loads(response_message["function_call"]["arguments"])
+                function_response = function_to_call(
+                    location=function_args.get("location"),
+                    unit=function_args.get("unit"),
+                )
+            except Exception as e:
+                logging.error(f"Error calling function: {e}")
+                function_response = "Error calling function."
+
+            # Step 4: send the info on the function call and function response to GPT
+            self.chat_messages.append(
+                GPTMessage(
+                    role="function",
+                    name=function_name,
+                    content=function_response
+                )
+            )  # extend conversation with function response
+        response = response_message['content'].strip()
+        logging.debug(f"Response: {response}")
+
+        return response
+
+    @event
     async def display_control(self, text: str):
         for channel in self.control_channels:
             await channel.send(text)
+
+    async def end_conversation(self):
+        await self.display_control("Conversation ended.")
+        await self.thread.delete()
+
+    async def get_assignment(self, location: str, unit: str):
+        await self.display_control(f"Retrieving assignment at {location} in unit {unit}.")
+        return "Assignment retrieved."
+
+    async def get_context(self, topic: str):
+        await self.display_control(f"Retrieving context for {topic}.")
+        return "Context retrieved."
+
 
 
 def parse_blocks(text: str, limit=2000):
