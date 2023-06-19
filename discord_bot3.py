@@ -169,12 +169,12 @@ class DuckResponseFlow:
                 function_response = await function_to_call(**function_args)
             except Exception as e:
                 logging.error(f"Error calling function: {e}")
-                function_response = "Error calling function."
+                function_response = f"Error calling {function_name}."
 
             # Step 4: send the info on the function call and function response to GPT
             self.chat_messages.append(
                 GPTMessage(
-                    role="function",
+                    role="system",
                     name=function_name,
                     content=function_response
                 )
@@ -192,11 +192,11 @@ class DuckResponseFlow:
 
     async def get_assignment(self, assignment_name: str):
         await self.display_control(f"Retrieving assignment {assignment_name}.")
-        return "Assignment retrieved."
+        return f"Assignment {assignment_name} retrieved."
 
     async def get_context(self, topic: str):
         await self.display_control(f"Retrieving context for {topic}.")
-        return "Context retrieved."
+        return f"Context retrieved for {topic}."
 
 
 
