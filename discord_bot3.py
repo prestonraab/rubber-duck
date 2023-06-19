@@ -188,6 +188,7 @@ class DuckResponseFlow:
     async def end_conversation(self):
         await self.display_control("Conversation ended.")
         await self.thread.delete()
+        return "Conversation ended."
 
     async def get_assignment(self, assignment_name: str):
         await self.display_control(f"Retrieving assignment {assignment_name}.")
