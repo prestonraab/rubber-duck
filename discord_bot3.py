@@ -272,10 +272,10 @@ async def restart(message):
 
 async def hard_restart(message):
     """
-    Restart the bot and clear the conversations
+    Restart the bot and clear the workflows
     :param message: The message that triggered the restart
     """
-    await execute_command('rm -f conversations/*.json', message.channel)
+    await execute_command('rm -f saved-state/*.json', message.channel)
     await restart(message)
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
