@@ -232,6 +232,7 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
 async def display_help(thread: Union[discord.Thread, discord.TextChannel]):
     await thread.send(
         "!restart - restart the bot\n"
+        "!hard restart - restart the bot and clear the conversations\n"
         "!log - print the log file\n"
         "!rm log - remove the log file\n"
         "!status - print a status message\n"
@@ -272,6 +273,14 @@ async def restart(message):
     subprocess.Popen(["bash", "restart.sh"])
     return
 
+
+def hard_restart(message):
+    """
+    Restart the bot and clear the conversations
+    :param message: The message that triggered the restart
+    """
+    await execute_command('rm -f conversations/*.json', message.channel)
+    await restart(message)
 
 class DiscordWorkflowSerializer(WorkflowSerializer):
     def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
@@ -452,6 +461,9 @@ class MyClient(discord.Client):
         channel = message.channel
         if content.startswith('!restart'):
             await restart(message)
+
+        elif content.startswith('!hard restart'):
+            await hard_restart(message)
 
         elif content.startswith('!log'):
             await channel.send(file=discord.File(log_file))
