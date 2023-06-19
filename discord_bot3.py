@@ -35,11 +35,10 @@ AI_ENGINE = 'gpt-4'
 FAST_AI_ENGINE = 'gpt-3.5-turbo-0613'
 
 
-@dataclass
-class GPTMessage:
+class GPTMessage(TypedDict, total=False):
     role: str
     content: str
-    name: str = field(default=None)
+    name: str
 
 
 @dataclass
