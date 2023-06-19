@@ -11,7 +11,7 @@ from discord import ChannelType
 import openai
 import argparse
 
-from typing import Callable, TypedDict, Union, Any, Optional
+from typing import Callable, TypedDict, Union, Any
 
 from quest import event, signal as quest_signal
 from quest.workflow_manager import WorkflowSerializer, WorkflowManager
@@ -35,10 +35,11 @@ AI_ENGINE = 'gpt-4'
 FAST_AI_ENGINE = 'gpt-3.5-turbo-0613'
 
 
-class GPTMessage(TypedDict):
+@dataclass
+class GPTMessage:
     role: str
     content: str
-    name: Optional[str]
+    name: str = field(default=None)
 
 
 @dataclass
@@ -427,7 +428,7 @@ class MyClient(discord.Client):
         )
 
         messages = [
-            dict(role='system', content=prefix or message.content)
+            GPTMessage(role='system', content=prefix or message.content)
         ]
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
