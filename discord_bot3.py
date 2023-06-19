@@ -106,7 +106,6 @@ class DuckResponseFlow:
         self.chat_messages.append(response_message)
         return response
 
-    @event
     async def act_on_category(self):
         p = f'''If the above conversation is over, delete the conversation history.
         If answering the above question requires assignment-specific context, retrieve that assignment.
