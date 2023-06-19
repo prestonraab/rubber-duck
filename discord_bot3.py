@@ -3,8 +3,6 @@ import logging
 import os
 import signal
 import subprocess
-from collections import defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import discord
@@ -42,10 +40,13 @@ class GPTMessage(TypedDict, total=False):
     name: str
 
 
-class GPTParameters(defaultdict):
-    type: str = "object"
-    required: list[str]
-    properties: dict[str, dict[str:Any]]
+def GPTParameters(properties: dict[str, dict[str:Any]] = None, required: list[str] = None):
+    d = {"type": "object"}
+    if properties:
+        d["properties"] = properties
+    if required:
+        d["required"] = required
+    return d
 
 
 class GPTFunction(TypedDict):
@@ -53,7 +54,7 @@ class GPTFunction(TypedDict):
     # https://json-schema.org/understanding-json-schema/reference/object.html#properties
     name: str
     description: str
-    parameters: GPTParameters
+    parameters: dict[str, dict[str, Any]]
 
 
 class DuckResponseFlow:
