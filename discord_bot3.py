@@ -274,7 +274,7 @@ async def restart(message):
     return
 
 
-def hard_restart(message):
+async def hard_restart(message):
     """
     Restart the bot and clear the conversations
     :param message: The message that triggered the restart
