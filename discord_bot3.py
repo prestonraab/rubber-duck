@@ -40,25 +40,12 @@ class GPTMessage(TypedDict, total=False):
     name: str
 
 
-def GPTParameters(properties: dict[str, dict[str:Any]] = None, required: list[str] = None):
-    d = {"type": "object"}
-    if properties:
-        d["properties"] = properties
-    if required:
-        d["required"] = required
-    return d
-
-
-def GPTFunction(name: str, description: str, parameters: dict[str, dict[str, Any]] = None):
+class GPTFunction(TypedDict):
     # See this website for how to specify parameter types:
     # https://json-schema.org/understanding-json-schema/reference/object.html#properties
-    d = {
-        "name": name,
-        "description": description
-    }
-    if parameters:
-        d["parameters"] = parameters
-    return d
+    name: str
+    description: str
+    parameters: dict[str, dict[str, Any]]
 
 
 class DuckResponseFlow:
@@ -124,29 +111,39 @@ class DuckResponseFlow:
         If answering the above question requires assignment-specific context, retrieve that assignment.
         If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.'''
 
-        functions = [
-            GPTFunction(
-                name='end_conversation',
-                description='Delete the conversation history',
-                parameters=GPTParameters()),
+        functions = [GPTFunction(
+            name='end_conversation',
+            description='Delete the conversation history',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "last_message": {
+                        "type": "string"
+                    }
+                }
+            }),
             GPTFunction(
                 name='get_assignment',
                 description='Retrieve an assignment',
-                parameters=GPTParameters(
-                    properties={
-                        "assignment_name": {"type": "string"}
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "assignment_name": {
+                            "type": "string"
+                        }
                     }
-                )
-            ),
+                }),
             GPTFunction(
                 name='get_context',
                 description='Retrieve context from the appropriate guide entry',
-                parameters=GPTParameters(
-                    properties={
-                        "topic": {"type": "string"}
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "topic": {
+                            "type": "string"
+                        }
                     }
-                )
-            )]
+                })]
 
         completion = await openai.ChatCompletion.acreate(
             messages=self.chat_messages[-1:] + [GPTMessage(role='system', content=p)],
