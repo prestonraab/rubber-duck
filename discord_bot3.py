@@ -157,16 +157,17 @@ async def execute_command(text, channel):
     return
 
 
-async def restart(message):
+async def restart(message, rebase=False):
     """
     Restart the bot
+    :param rebase: Whether to rebase when pulling
     :param message: The message that triggered the restart
     """
     await message.channel.send(f'Restart requested.')
     await execute_command('git fetch', message.channel)
     await execute_command('git reset --hard', message.channel)
     await execute_command('git clean -f', message.channel)
-    await execute_command('git pull --rebase=false', message.channel)
+    await execute_command('git pull --rebase='+'true' if rebase else 'false', message.channel)
     await execute_command('poetry install', message.channel)
     await message.channel.send(f'Restarting.')
     subprocess.Popen(["bash", "restart.sh"])
@@ -350,7 +351,11 @@ class MyClient(discord.Client):
         """
         content = message.content
         channel = message.channel
-        if content.startswith('!restart'):
+
+        if content.startswith('!rebase'):
+            await restart(message, rebase=True)
+
+        elif content.startswith('!restart'):
             await restart(message)
 
         elif content.startswith('!log'):
