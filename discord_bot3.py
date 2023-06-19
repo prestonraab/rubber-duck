@@ -284,55 +284,6 @@ async def hard_restart(message):
     await restart(message)
 
 
-class DiscordWorkflowSerializer(WorkflowSerializer):
-    def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
-                 discord_client: discord.Client, folder: Path):
-        self.create_workflow = create_workflow
-        self.folder = folder
-        self.discord_client = discord_client
-
-    def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
-        # Serialize workflow to "workflow" + workflow_id + ".json"
-        # workflow is the workflow_object, attributes can be tested for existence with hasattr
-        metadata = {"tid": workflow_id, "wid": workflow_id}
-        if hasattr(workflow, 'message_id'):
-            metadata["message_id"] = workflow.message_id
-
-        if hasattr(workflow, 'control_channels'):
-            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
-
-        if hasattr(workflow, 'chat_messages'):
-            metadata["chat_messages"] = [message for message in workflow.chat_messages]
-
-        file_to_save = "workflow" + workflow_id + ".json"
-        with open(self.folder / file_to_save, 'w') as file:
-            json.dump(metadata, file)
-
-    def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
-        # Loads workflow from "workflow" + workflow_id + ".json"
-        # Uses the create_workflow function to create a new workflow object
-        file_to_load = "workflow" + workflow_id + ".json"
-        with open(self.folder / file_to_load) as file:
-            workflow_metadata = json.load(file)
-            kwargs = {}
-            if 'tid' in workflow_metadata:
-                kwargs['thread'] = self.get_thread(workflow_metadata['tid'])
-            if 'message_id' in workflow_metadata:
-                kwargs['message_id'] = workflow_metadata['message_id']
-            if 'control_channels' in workflow_metadata:
-                kwargs['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
-                                              workflow_metadata['control_channels']]
-            if 'chat_messages' in workflow_metadata:
-                kwargs['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
-                                           workflow_metadata['chat_messages']]
-
-            # Unpacks the args dictionary into keyword arguments
-            # The create_workflow function is the constructor of the workflow object
-            return self.create_workflow(**kwargs)
-
-    def get_thread(self, tid) -> discord.Thread:
-        thread = self.discord_client.get_channel(int(tid))
-        return thread
 
 
 class MyClient(discord.Client):
@@ -483,6 +434,68 @@ class MyClient(discord.Client):
         elif content.startswith('!'):
             await channel.send('Unknown command. Try !help')
 
+
+class DiscordWorkflowSerializer(WorkflowSerializer):
+    def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
+                 discord_client: MyClient, folder: Path):
+        self.create_workflow = create_workflow
+        self.folder = folder
+        self.discord_client = discord_client
+
+    def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
+        # Serialize workflow to "workflow" + workflow_id + ".json"
+        # workflow is the workflow_object, attributes can be tested for existence with hasattr
+        metadata = {"tid": workflow_id, "wid": workflow_id}
+        if hasattr(workflow, 'message_id'):
+            metadata["message_id"] = workflow.message_id
+
+        if hasattr(workflow, 'control_channels'):
+            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
+
+        if hasattr(workflow, 'chat_messages'):
+            metadata["chat_messages"] = [message for message in workflow.chat_messages]
+
+        file_to_save = "workflow" + workflow_id + ".json"
+        with open(self.folder / file_to_save, 'w') as file:
+            json.dump(metadata, file)
+
+    def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
+        # Loads workflow from "workflow" + workflow_id + ".json"
+        # Uses the create_workflow function to create a new workflow object
+        file_to_load = "workflow" + workflow_id + ".json"
+        with open(self.folder / file_to_load) as file:
+            workflow_metadata = json.load(file)
+            kwargs = {}
+            if 'tid' in workflow_metadata:
+                kwargs['thread'] = self.get_thread(workflow_metadata['tid'])
+            if 'message_id' in workflow_metadata:
+                kwargs['message_id'] = workflow_metadata['message_id']
+            if 'control_channels' in workflow_metadata:
+                kwargs['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
+                                              workflow_metadata['control_channels']]
+            if 'chat_messages' in workflow_metadata:
+                kwargs['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
+                                           workflow_metadata['chat_messages']]
+
+            # Unpacks the args dictionary into keyword arguments
+            # The create_workflow function is the constructor of the workflow object
+            try:
+                return self.create_workflow(**kwargs)
+            except TypeError as e:
+                for channel in self.discord_client.control_channels:
+                    send(channel, f"Deleting workflow {workflow_id} because of error")
+                    channel.send(file=discord.File(self.folder / file_to_load))
+                    execute_command(f"rm {self.folder / file_to_load}", channel)
+
+                logging.debug(
+                    f"Error while loading workflow {workflow_id} from file {file_to_load}. "
+                    f"Please check that the workflow constructor matches the workflow file. "
+                    f"Error: {e}"
+                )
+
+    def get_thread(self, tid) -> discord.Thread:
+        thread = self.discord_client.get_channel(int(tid))
+        return thread
 
 def main(prompts: Path, log_file: Path, config: Path, saved_state: Path):
     # create client
