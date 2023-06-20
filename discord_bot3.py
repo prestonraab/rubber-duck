@@ -109,7 +109,9 @@ class DuckResponseFlow:
             "Thanks!",
             "I think I understand now.",
             "I'm good for now.",
-            "That's it."
+            "That's it.",
+            "Bye"
+
         ]
         example_assignments = [
             "homework 1a",
@@ -133,7 +135,7 @@ class DuckResponseFlow:
             "grouping",
             "program arguments"
         ]
-        p = f'''If one of the above participants is ready to end the conversation, delete the conversation history.
+        p = f'''If the above conversation is over, delete the conversation history.
         Examples of last messages that indicate a conversation is over: {'"'}{'", "'.join(done_examples)}{'"'}.
         If answering the above question requires assignment-specific context, retrieve that assignment.
         Examples of assignment names: {'"'}{'", "'.join(example_assignments)}{'"'}.
