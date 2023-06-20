@@ -447,7 +447,7 @@ class MyClient(discord.Client):
 
         elif content.startswith('!log'):
             await channel.send(file=discord.File(log_file))
-            await channel.send(str(log_file.read_text()[-1000:]))
+            await channel.send(str(log_file.read_text()[-2000:]))
 
         elif content.startswith('!rm log'):
             await execute_command("rm " + str(log_file), channel)
