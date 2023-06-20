@@ -478,6 +478,10 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         # Serialize workflow to "workflow" + workflow_id + ".json"
         # workflow is the workflow_object, attributes can be tested for existence with hasattr
         metadata = {"tid": workflow_id, "wid": workflow_id}
+
+        for channel in self.discord_client.control_channels:
+            send(channel, f"  Attributes: {workflow.__dict__}")
+        
         if hasattr(workflow, 'message_id'):
             metadata["message_id"] = workflow.message_id
 
