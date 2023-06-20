@@ -101,7 +101,6 @@ class DuckResponseFlow:
         """
         Query the OPENAI API
         """
-
         completion = await openai.ChatCompletion.acreate(
             messages=self.chat_messages,
             model=AI_ENGINE
@@ -113,42 +112,42 @@ class DuckResponseFlow:
         self.chat_messages.append(response_message)
         return response
 
-    async def act_on_category(self):
-        done_examples = [
-            "Thanks!",
-            "later",
-            "another time"
-            "I think I understand now.",
-            "I'm good for now.",
-            "That's it.",
-            "Bye",
-            "nevermind"
-        ]
-        example_assignments = [
-            "homework 1a",
-            "lab 2e",
-            "project 3"
-        ]
-        example_problems = [
-            "I need help with scurry",
-            "I'm working on personal library",
-            "I'm stuck on practice problems",
-            "postal routing is hard",
-            "Can you help me with auto correct",
-            "I'm doing scheduling",
-            "Help with simplify",
-            "Help on moose",
-            "Can you help me with invert-careful?"
-        ]
-        example_topics = [
-            "functions",
-            "while loops",
-            "list patterns",
-            "split and join",
-            "grouping",
-            "program arguments"
-        ]
-        p = f'''If the following conversation is over, delete the conversation history.
+    done_examples = [
+        "Thanks!",
+        "later",
+        "another time"
+        "I think I understand now.",
+        "I'm good for now.",
+        "That's it.",
+        "Bye",
+        "nevermind"
+    ]
+    example_assignments = [
+        "homework 1a",
+        "lab 2e",
+        "project 3"
+    ]
+    example_problems = [
+        "I need help with scurry",
+        "I'm working on personal library",
+        "I'm stuck on practice problems",
+        "postal routing is hard",
+        "Can you help me with auto correct",
+        "I'm doing scheduling",
+        "Help with simplify",
+        "Help on moose",
+        "Can you help me with invert-careful?"
+    ]
+    example_topics = [
+        "functions",
+        "while loops",
+        "list patterns",
+        "split and join",
+        "grouping",
+        "program arguments"
+    ]
+
+    categorize_prompt = f'''If the following conversation is over, delete the conversation history.
         Examples of last messages that indicate a conversation is over: {'“'}{'”, “'.join(done_examples)}{'”'}.
         If answering a question below requires assignment-specific context, retrieve that assignment.
         Examples of assignment names: {'“'}{'”, “'.join(example_assignments)}{'”'}.
@@ -157,6 +156,7 @@ class DuckResponseFlow:
         If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
         Examples of topics: {'“'}{'”, “'.join(example_topics)}{'”'}.'''
 
+    async def act_on_category(self):
         functions = [
             GPTFunction(
                 name='end_conversation',
@@ -192,7 +192,8 @@ class DuckResponseFlow:
             )]
 
         completion = await openai.ChatCompletion.acreate(
-            messages=[GPTMessage(role='system', content=p)] + self.chat_messages[-1:],
+            # Prompt first, then last message
+            messages=[GPTMessage(role='system', content=DuckResponseFlow.categorize_prompt)] + self.chat_messages[-1:],
             model=FAST_AI_ENGINE,
             functions=functions,
             function_call='auto'
@@ -219,7 +220,7 @@ class DuckResponseFlow:
                 logging.error(f"Error calling function: {e}")
                 function_response = f"Error calling {function_name}. \n{e}"
 
-            # Let GPT know that the function has been called
+            # Add a system message to let GPT know that the function has been called
             self.chat_messages.append(
                 GPTMessage(
                     role="system",
