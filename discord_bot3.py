@@ -151,11 +151,7 @@ class DuckResponseFlow:
             description='Delete the conversation history',
             parameters={
                 "type": "object",
-                "properties": {
-                    "last_message": {
-                        "type": "string"
-                    }
-                }
+                "properties": {}
             }),
             GPTFunction(
                 name='get_assignment',
