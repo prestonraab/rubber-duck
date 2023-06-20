@@ -152,8 +152,8 @@ class DuckResponseFlow:
         Examples of last messages that indicate a conversation is over: {'“'}{'”, “'.join(done_examples)}{'”'}.
         If answering a question below requires assignment-specific context, retrieve that assignment.
         Examples of assignment names: {'“'}{'”, “'.join(example_assignments)}{'”'}.
-        If a question below needs more context on what the problem to answer the question, retrieve that problem. A problem is part of an assignment.
-        Examples of questions that need more context: {'“'}{'”, “'.join(example_problems)}{'”'}.
+        If a question below needs problem-specific context, and the assignment is unknown, retrieve that problem. A problem is part of an assignment.
+        Examples of questions that would require retrieving a problem: {'“'}{'”, “'.join(example_problems)}{'”'}.
         If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
         Examples of topics: {'“'}{'”, “'.join(example_topics)}{'”'}.'''
 
@@ -164,8 +164,8 @@ class DuckResponseFlow:
                 parameters=gpt_parameters()
             ),
             GPTFunction(
-                name='get_assignment',
-                description='Retrieve an assignment',
+                name='retrieve_assignment',
+                description='Retrieve a specific assignment, formatted like “homework 1a”',
                 parameters=gpt_parameters(
                     properties={
                         "assignment_name": {"type": "string"}
@@ -173,8 +173,8 @@ class DuckResponseFlow:
                 )
             ),
             GPTFunction(
-                name='get_problem',
-                description='Retrieve a problem',
+                name='retrieve_problem',
+                description='Retrieve a problem from an unknown assignment',
                 parameters=gpt_parameters(
                     properties={
                         "problem_name": {"type": "string"}
@@ -182,7 +182,7 @@ class DuckResponseFlow:
                 )
             ),
             GPTFunction(
-                name='get_context',
+                name='retrieve_topic',
                 description='Retrieve context from the appropriate guide entry',
                 parameters=gpt_parameters(
                     properties={
@@ -206,9 +206,9 @@ class DuckResponseFlow:
             # Note: the JSON response may not always be valid; be sure to handle errors
             available_functions = {
                 "end_conversation": self.end_conversation,
-                "get_assignment": self.get_assignment,
-                "get_problem": self.get_problem,
-                "get_topic": self.get_topic
+                "retrieve_assignment": self.get_assignment,
+                "retrieve_problem": self.get_problem,
+                "retrieve_topic": self.get_topic
             }
             function_name = response_message["function_call"]["name"]
             try:
