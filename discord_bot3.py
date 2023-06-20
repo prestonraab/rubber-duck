@@ -492,6 +492,9 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
 
         logging.debug(f"Attributes: {str(workflow.__dict__)}")
 
+        if hasattr(workflow, 'thread'):
+            metadata["tid"] = str(workflow.thread.id)
+
         if hasattr(workflow, 'message_id'):
             metadata["message_id"] = workflow.message_id
 
