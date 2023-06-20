@@ -287,31 +287,6 @@ async def execute_command(text, channel):
     return
 
 
-async def restart(message):
-    """
-    Restart the bot
-    :param message: The message that triggered the restart
-    """
-    await message.channel.send(f'Restart requested.')
-    await execute_command('git fetch', message.channel)
-    await execute_command('git reset --hard', message.channel)
-    await execute_command('git clean -f', message.channel)
-    await execute_command('git pull --rebase=false', message.channel)
-    await execute_command('poetry install', message.channel)
-    await message.channel.send(f'Restarting.')
-    subprocess.Popen(["bash", "restart.sh"])
-    return
-
-
-async def hard_restart(message):
-    """
-    Restart the bot and clear the workflows
-    :param message: The message that triggered the restart
-    """
-    await execute_command('rm -f saved-state/*.json', message.channel)
-    await restart(message)
-
-
 
 
 class MyClient(discord.Client):
@@ -433,6 +408,28 @@ class MyClient(discord.Client):
         self.control_channel_ids = config['control_channels']
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
+    async def restart(self, channel):
+        """
+        Restart the bot
+        """
+        self.__exit__(None, None, None)
+        await channel.send(f'Restart requested.')
+        await execute_command('git fetch', channel)
+        await execute_command('git reset --hard', channel)
+        await execute_command('git clean -f', channel)
+        await execute_command('git pull --rebase=false', channel)
+        await execute_command('poetry install', channel)
+        await channel.send(f'Restarting.')
+        subprocess.Popen(["bash", "restart.sh"])
+        return
+
+    async def hard_restart(self, channel):
+        """
+        Restart the bot and clear the workflows
+        """
+        await execute_command('rm -f saved-state/*.json', channel)
+        await self.restart(channel)
+
     async def control_on_message(self, message, log_file: Path):
         """
         This function is called whenever the bot sees a message in a control channel
@@ -440,10 +437,10 @@ class MyClient(discord.Client):
         content = message.content
         channel = message.channel
         if content.startswith('!restart'):
-            await restart(message)
+            await self.restart(channel)
 
         elif content.startswith('!hard restart'):
-            await hard_restart(message)
+            await self.hard_restart(channel)
 
         elif content.startswith('!log'):
             await channel.send(file=discord.File(log_file))
