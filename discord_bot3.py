@@ -206,7 +206,7 @@ class DuckResponseFlow:
                 function_response = await function_to_call(**function_args)
             except Exception as e:
                 logging.error(f"Error calling function: {e}")
-                function_response = f"Error calling {function_name}."
+                function_response = f"Error calling {function_name}. \n{e}"
 
             # Step 4: send the info on the function call and function response to GPT
             self.chat_messages.append(
