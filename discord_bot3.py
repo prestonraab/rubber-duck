@@ -207,7 +207,8 @@ class DuckResponseFlow:
             available_functions = {
                 "end_conversation": self.end_conversation,
                 "get_assignment": self.get_assignment,
-                "get_context": self.get_context
+                "get_problem": self.get_problem,
+                "get_topic": self.get_topic
             }
             function_name = response_message["function_call"]["name"]
             try:
@@ -247,7 +248,7 @@ class DuckResponseFlow:
         await self.get_assignment(assignment_name)
         return f"Problem {problem_name} retrieved from assignment {assignment_name}."
 
-    async def get_context(self, topic: str):
+    async def get_topic(self, topic: str):
         await self.display_control(f"Retrieving context for {topic}.")
         return f"Context retrieved for {topic}."
 
