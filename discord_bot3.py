@@ -496,7 +496,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
 
         logging.debug(f"Attributes: {str(workflow.__dict__)}")
 
-        if hasattr(workflow, 'thread'):
+        if hasattr(workflow, 'thread') and workflow.thread:
             metadata["tid"] = str(workflow.thread.id)
 
         if hasattr(workflow, 'message_id'):
@@ -526,7 +526,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             if 'message_id' in workflow_metadata:
                 kwargs['message_id'] = workflow_metadata['message_id']
             if 'control_channels' in workflow_metadata:
-                kwargs['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
+                kwargs['control_channels'] = [self.get_thread(channel_id) for channel_id in
                                               workflow_metadata['control_channels']]
             if 'chat_messages' in workflow_metadata:
                 kwargs['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
@@ -546,7 +546,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
                 (self.folder / file_to_load).unlink()
                 return WorkflowFunction
 
-    def get_thread(self, tid) -> discord.Thread:
+    def get_thread(self, tid) -> Union[discord.Thread, discord.TextChannel]:
         thread = self.discord_client.get_channel(int(tid))
         return thread
 
