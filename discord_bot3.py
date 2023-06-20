@@ -137,13 +137,13 @@ class DuckResponseFlow:
             "grouping",
             "program arguments"
         ]
-        p = f'''If the above conversation is over, delete the conversation history.
+        p = f'''If the following conversation is over, delete the conversation history.
         Examples of last messages that indicate a conversation is over: {'"'}{'", "'.join(done_examples)}{'"'}.
-        If answering the above question requires assignment-specific context, retrieve that assignment.
+        If answering a question below requires assignment-specific context, retrieve that assignment.
         Examples of assignment names: {'"'}{'", "'.join(example_assignments)}{'"'}.
-        If answering the above question requires problem-specific context, identify the assignment the problem belongs to, and retrieve that assignment.
+        If answering a question below requires problem-specific context, identify the assignment the problem belongs to, and retrieve that assignment.
         Examples of problem names: {'"'}{'", "'.join(example_problems)}{'"'}.
-        If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.
+        If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
         Examples of topics: {'"'}{'", "'.join(example_topics)}{'"'}.'''
 
         functions = [GPTFunction(
@@ -181,7 +181,7 @@ class DuckResponseFlow:
                 })]
 
         completion = await openai.ChatCompletion.acreate(
-            messages=self.chat_messages[-2:] + [GPTMessage(role='system', content=p)],
+            messages=[GPTMessage(role='system', content=p)] + self.chat_messages[-1:],
             model=FAST_AI_ENGINE,
             functions=functions,
             function_call='auto'
@@ -480,8 +480,8 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
         metadata = {"tid": workflow_id, "wid": workflow_id}
 
         for channel in self.discord_client.control_channels:
-            send(channel, f"  Attributes: {workflow.__dict__}")
-        
+            send(channel, f"  Attributes: {str(workflow.__dict__)}")
+
         if hasattr(workflow, 'message_id'):
             metadata["message_id"] = workflow.message_id
 
