@@ -39,6 +39,13 @@ class GPTMessage(TypedDict, total=False):
     content: str
     name: str
 
+def gpt_parameters(properties: dict[str, Any] = None, required: list[str] = None):
+    d = {"type": "object"}
+    if required:
+        d["required"] = required
+    if properties:
+        d["properties"] = properties
+    return d
 
 class GPTFunction(TypedDict):
     # See this website for how to specify parameter types:
@@ -146,35 +153,30 @@ class DuckResponseFlow:
         If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
         Examples of topics: {'"'}{'", "'.join(example_topics)}{'"'}.'''
 
-        functions = [GPTFunction(
-            name='end_conversation',
-            description='Delete the conversation history',
-            parameters={
-                "type": "object",
-                "properties": {}
-            }),
+        functions = [
+            GPTFunction(
+                name='end_conversation',
+                description='Delete the conversation history',
+                parameters=gpt_parameters()
+            ),
             GPTFunction(
                 name='get_assignment',
                 description='Retrieve an assignment',
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "assignment_name": {
-                            "type": "string"
-                        }
+                parameters=gpt_parameters(
+                    properties={
+                        "assignment_name": {"type": "string"}
                     }
-                }),
+                ),
+            ),
             GPTFunction(
                 name='get_context',
                 description='Retrieve context from the appropriate guide entry',
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "topic": {
-                            "type": "string"
-                        }
+                parameters=gpt_parameters(
+                    properties={
+                        "topic": {"type": "string"}
                     }
-                })]
+                ),
+            )]
 
         completion = await openai.ChatCompletion.acreate(
             messages=[GPTMessage(role='system', content=p)] + self.chat_messages[-1:],
