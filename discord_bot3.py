@@ -537,15 +537,13 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             try:
                 return self.create_workflow(**kwargs)
             except TypeError as e:
-                logging.debug(f"Deleting workflow {workflow_id} because of error")
-                
-                    await execute_command(f"rm {self.folder / file_to_load}", channel)
-
                 logging.debug(
                     f"Error while loading workflow {workflow_id} from file {file_to_load}. "
                     f"Please check that the workflow constructor matches the workflow file. "
                     f"Error: {e}"
                 )
+                logging.debug(f"Deleting file {file_to_load}. Contents: {workflow_metadata}")
+                (self.folder / file_to_load).unlink()
                 return WorkflowFunction
 
     def get_thread(self, tid) -> discord.Thread:
