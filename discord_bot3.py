@@ -97,17 +97,15 @@ class DuckResponseFlow:
             messages=self.chat_messages,
             model=AI_ENGINE
         )
-        logging.debug(f"Completion: {completion}")
 
         response_message = completion.choices[0]['message']
         response = response_message['content'].strip()
-        logging.debug(f"Response: {response}")
 
         self.chat_messages.append(response_message)
         return response
 
     async def act_on_category(self):
-        p = f'''If the above conversation is over, delete the conversation history.
+        p = f'''If one of the above participants is ready to end the conversation, delete the conversation history.
         If answering the above question requires assignment-specific context, retrieve that assignment.
         If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.'''
 
