@@ -44,7 +44,6 @@ class DuckResponseFlow:
     chat_messages: list[GPTMessage]
     message_id: int
     control_channels: list[discord.TextChannel]
-    fast: bool
 
     def __init__(self, thread, message_id, control_channels: list[discord.TextChannel],
                  chat_messages: list[GPTMessage] = None):
