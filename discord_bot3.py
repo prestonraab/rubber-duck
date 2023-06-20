@@ -31,21 +31,23 @@ load_env()
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 AI_ENGINE = 'gpt-4'
-FAST_AI_ENGINE = 'gpt-3.5-turbo'
+FAST_AI_ENGINE = 'gpt-3.5-turbo-0613'
 
 
-class GPTMessage(TypedDict):
+class GPTMessage(TypedDict, total=False):
     role: str
     content: str
+    name: str
 
 
 class DuckResponseFlow:
-    thread: discord.Thread
+    thread: Union[discord.Thread, discord.TextChannel]
     chat_messages: list[GPTMessage]
     message_id: int
     control_channels: list[discord.TextChannel]
 
-    def __init__(self, thread, message_id, control_channels: list[discord.TextChannel],
+    def __init__(self, thread: Union[discord.Thread, discord.TextChannel],
+                 message_id, control_channels: list[discord.TextChannel],
                  chat_messages: list[GPTMessage] = None):
         self.thread = thread
         self.chat_messages: list[GPTMessage] = chat_messages
@@ -57,7 +59,8 @@ class DuckResponseFlow:
 
         while True:
             async with self.thread.typing():
-                response = await self.query(user_response)
+                self.chat_messages.append(GPTMessage(role='user', content=user_response))
+                response = await self.query()
                 if not response:
                     response = 'RubberDuck encountered an error.'
 
@@ -77,21 +80,17 @@ class DuckResponseFlow:
         ...
 
     @event
-    async def query(self, message_text: str):
+    async def query(self):
         """
         Query the OPENAI API
         """
-        self.chat_messages.append(dict(role='user', content=message_text))
-
         completion = await openai.ChatCompletion.acreate(
-            model=AI_ENGINE,
-            messages=self.chat_messages
+            messages=self.chat_messages,
+            model=AI_ENGINE
         )
-        logging.debug(f"Completion: {completion}")
 
         response_message = completion.choices[0]['message']
         response = response_message['content'].strip()
-        logging.debug(f"Response: {response}")
 
         self.chat_messages.append(response_message)
         return response
@@ -131,6 +130,7 @@ async def send(thread: Union[discord.Thread, discord.TextChannel], text: str):
 async def display_help(thread: Union[discord.Thread, discord.TextChannel]):
     await thread.send(
         "!restart - restart the bot\n"
+        "!hard restart - restart the bot and clear the workflows\n"
         "!log - print the log file\n"
         "!rm log - remove the log file\n"
         "!status - print a status message\n"
@@ -154,74 +154,6 @@ async def execute_command(text, channel):
     if output:
         await send(channel, f'```{output}```')
     return
-
-
-async def restart(message):
-    """
-    Restart the bot
-    :param message: The message that triggered the restart
-    """
-    await message.channel.send(f'Restart requested.')
-    await execute_command('git fetch', message.channel)
-    await execute_command('git reset --hard', message.channel)
-    await execute_command('git clean -f', message.channel)
-    await execute_command('git pull --rebase=false', message.channel)
-    await execute_command('poetry install', message.channel)
-    await message.channel.send(f'Restarting.')
-    subprocess.Popen(["bash", "restart.sh"])
-    return
-
-
-class DiscordWorkflowSerializer(WorkflowSerializer):
-    def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
-                 discord_client: discord.Client, folder: Path):
-        self.create_workflow = create_workflow
-        self.folder = folder
-        self.discord_client = discord_client
-
-    def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
-        # Serialize workflow to "workflow" + workflow_id + ".json"
-        # workflow is the workflow_object, attributes can be tested for existence with hasattr
-        metadata = {"tid": workflow_id, "wid": workflow_id}
-
-        if hasattr(workflow, 'message_id'):
-            metadata["message_id"] = workflow.message_id
-
-        if hasattr(workflow, 'control_channels'):
-            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
-
-        if hasattr(workflow, 'chat_messages'):
-            metadata["chat_messages"] = [message for message in workflow.chat_messages]
-
-        file_to_save = "workflow" + workflow_id + ".json"
-        with open(self.folder / file_to_save, 'w') as file:
-            json.dump(metadata, file)
-
-    def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
-        # Loads workflow from "workflow" + workflow_id + ".json"
-        # Uses the create_workflow function to create a new workflow object
-        file_to_load = "workflow" + workflow_id + ".json"
-        with open(self.folder / file_to_load) as file:
-            workflow_metadata = json.load(file)
-            kwargs = {}
-            if 'tid' in workflow_metadata:
-                kwargs['thread'] = self.get_thread(workflow_metadata['tid'])
-            if 'message_id' in workflow_metadata:
-                kwargs['message_id'] = workflow_metadata['message_id']
-            if 'control_channels' in workflow_metadata:
-                kwargs['control_channels'] = [self.discord_client.get_channel(int(channel_id)) for channel_id in
-                                              workflow_metadata['control_channels']]
-            if 'chat_messages' in workflow_metadata:
-                kwargs['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
-                                           workflow_metadata['chat_messages']]
-
-            # Unpacks the args dictionary into keyword arguments
-            # The create_workflow function is the constructor of the workflow object
-            return self.create_workflow(**kwargs)
-
-    def get_thread(self, tid) -> discord.Thread:
-        thread = self.discord_client.get_channel(int(tid))
-        return thread
 
 
 class MyClient(discord.Client):
@@ -262,6 +194,7 @@ class MyClient(discord.Client):
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
+        self._load_control_channels(self.config)
 
         # contextualize members
         self.workflow_manager.load_workflows()
@@ -272,7 +205,6 @@ class MyClient(discord.Client):
         logging.info(self.user.id)
         logging.info('------')
 
-        self._load_control_channels(self.config)
         for channel in self.control_channels:
             await send(channel, 'Duck online')
 
@@ -321,7 +253,7 @@ class MyClient(discord.Client):
         )
 
         messages = [
-            dict(role='system', content=prefix or message.content)
+            GPTMessage(role='system', content=prefix or message.content)
         ]
         await self.workflow_manager.start_async_workflow(
             str(thread.id),
@@ -343,6 +275,32 @@ class MyClient(discord.Client):
         self.control_channel_ids = config['control_channels']
         self.control_channels = [c for c in self.get_all_channels() if c.id in self.control_channel_ids]
 
+    async def restart(self, channel):
+        """
+        Restart the bot
+        """
+        await channel.send(f'Saving workflows.')
+        try:
+            self.workflow_manager.save_workflows()
+        except Exception as e:
+            await channel.send(f'Error saving workflows: {e}')
+        await channel.send(f'Restart requested.')
+        await execute_command('git fetch', channel)
+        await execute_command('git reset --hard', channel)
+        await execute_command('git clean -f', channel)
+        await execute_command('git pull --rebase=false', channel)
+        await execute_command('poetry install', channel)
+        await channel.send(f'Restarting.')
+        subprocess.Popen(["bash", "restart.sh"])
+        return
+
+    async def hard_restart(self, channel):
+        """
+        Restart the bot and clear the workflows
+        """
+        await execute_command('rm saved-state/*.json', channel)
+        await self.restart(channel)
+
     async def control_on_message(self, message, log_file: Path):
         """
         This function is called whenever the bot sees a message in a control channel
@@ -350,10 +308,14 @@ class MyClient(discord.Client):
         content = message.content
         channel = message.channel
         if content.startswith('!restart'):
-            await restart(message)
+            await self.restart(channel)
+
+        elif content.startswith('!hard restart'):
+            await self.hard_restart(channel)
 
         elif content.startswith('!log'):
             await channel.send(file=discord.File(log_file))
+            await channel.send(str(log_file.read_text()[-2000:]))
 
         elif content.startswith('!rm log'):
             await execute_command("rm " + str(log_file), channel)
@@ -367,6 +329,75 @@ class MyClient(discord.Client):
 
         elif content.startswith('!'):
             await channel.send('Unknown command. Try !help')
+
+
+class DiscordWorkflowSerializer(WorkflowSerializer):
+    def __init__(self, create_workflow: Callable[[Any], WorkflowFunction],
+                 discord_client: MyClient, folder: Path):
+        self.create_workflow = create_workflow
+        self.folder = folder
+        self.discord_client = discord_client
+
+    def serialize_workflow(self, workflow_id: str, workflow: WorkflowFunction):
+        # Serialize workflow to "workflow" + workflow_id + ".json"
+        # workflow is the workflow_object, attributes can be tested for existence with hasattr
+        metadata = {"tid": workflow_id, "wid": workflow_id}
+
+        logging.debug(f"Attributes: {str(workflow.__dict__)}")
+
+        if hasattr(workflow, 'thread') and workflow.thread:
+            metadata["tid"] = str(workflow.thread.id)
+
+        if hasattr(workflow, 'message_id'):
+            metadata["message_id"] = workflow.message_id
+
+        if hasattr(workflow, 'control_channels'):
+            metadata["control_channels"] = [str(channel.id) for channel in workflow.control_channels]
+
+        if hasattr(workflow, 'chat_messages'):
+            metadata["chat_messages"] = [message for message in workflow.chat_messages]
+
+        file_to_save = "workflow" + workflow_id + ".json"
+        with open(self.folder / file_to_save, 'w') as file:
+            json.dump(metadata, file)
+
+    def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
+        # Loads workflow from "workflow" + workflow_id + ".json"
+        # Uses the create_workflow function to create a new workflow object
+        logging.debug(f'Loading workflow {workflow_id}.')
+
+        file_to_load = "workflow" + workflow_id + ".json"
+        with open(self.folder / file_to_load) as file:
+            workflow_metadata = json.load(file)
+            kwargs = {}
+            if 'tid' in workflow_metadata:
+                kwargs['thread'] = self.get_thread(workflow_metadata['tid'])
+            if 'message_id' in workflow_metadata:
+                kwargs['message_id'] = workflow_metadata['message_id']
+            if 'control_channels' in workflow_metadata:
+                kwargs['control_channels'] = [self.get_thread(channel_id) for channel_id in
+                                              workflow_metadata['control_channels']]
+            if 'chat_messages' in workflow_metadata:
+                kwargs['chat_messages'] = [GPTMessage(**message_dict) for message_dict in
+                                           workflow_metadata['chat_messages']]
+
+            # Unpacks the args dictionary into keyword arguments
+            # The create_workflow function is the constructor of the workflow object
+            try:
+                return self.create_workflow(**kwargs)
+            except TypeError as e:
+                logging.debug(
+                    f"Error while loading workflow {workflow_id} from file {file_to_load}. "
+                    f"Please check that the workflow constructor matches the workflow file. "
+                    f"Error: {e}"
+                )
+                logging.debug(f"Deleting file {file_to_load}. Contents: {workflow_metadata}")
+                (self.folder / file_to_load).unlink()
+                return WorkflowFunction
+
+    def get_thread(self, tid) -> Union[discord.Thread, discord.TextChannel]:
+        thread = self.discord_client.get_channel(int(tid))
+        return thread
 
 
 def main(prompts: Path, log_file: Path, config: Path, saved_state: Path):
