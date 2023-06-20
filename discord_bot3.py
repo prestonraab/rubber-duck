@@ -427,7 +427,7 @@ class MyClient(discord.Client):
         """
         Restart the bot and clear the workflows
         """
-        await execute_command('rm -f saved-state/*.json', channel)
+        await execute_command('rm saved-state/*.json', channel)
         await self.restart(channel)
 
     async def control_on_message(self, message, log_file: Path):
