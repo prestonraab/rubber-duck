@@ -57,12 +57,13 @@ class GPTFunction(TypedDict):
 
 
 class DuckResponseFlow:
-    thread: discord.Thread
+    thread: Union[discord.Thread, discord.TextChannel]
     chat_messages: list[GPTMessage]
     message_id: int
     control_channels: list[discord.TextChannel]
 
-    def __init__(self, thread, message_id, control_channels: list[discord.TextChannel],
+    def __init__(self, thread: Union[discord.Thread, discord.TextChannel],
+                 message_id, control_channels: list[discord.TextChannel],
                  chat_messages: list[GPTMessage] = None):
         self.thread = thread
         self.chat_messages: list[GPTMessage] = chat_messages
@@ -148,13 +149,13 @@ class DuckResponseFlow:
             "program arguments"
         ]
         p = f'''If the following conversation is over, delete the conversation history.
-        Examples of last messages that indicate a conversation is over: {'"'}{'", "'.join(done_examples)}{'"'}.
+        Examples of last messages that indicate a conversation is over: {'“'}{'”, “'.join(done_examples)}{'”'}.
         If answering a question below requires assignment-specific context, retrieve that assignment.
-        Examples of assignment names: {'"'}{'", "'.join(example_assignments)}{'"'}.
+        Examples of assignment names: {'“'}{'”, “'.join(example_assignments)}{'”'}.
         If a question below needs more context on what the problem to answer the question, retrieve that problem. A problem is part of an assignment.
-        Examples of questions that need more context: {'"'}{'", "'.join(example_problems)}{'"'}.
+        Examples of questions that need more context: {'“'}{'”, “'.join(example_problems)}{'”'}.
         If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
-        Examples of topics: {'"'}{'", "'.join(example_topics)}{'"'}.'''
+        Examples of topics: {'“'}{'”, “'.join(example_topics)}{'”'}.'''
 
         functions = [
             GPTFunction(
