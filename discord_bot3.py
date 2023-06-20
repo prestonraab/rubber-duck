@@ -345,6 +345,7 @@ class MyClient(discord.Client):
 
     async def on_ready(self):
         self.guild_dict = {guild.id: guild async for guild in self.fetch_guilds(limit=150)}
+        self._load_control_channels(self.config)
 
         # contextualize members
         self.workflow_manager.load_workflows()
@@ -355,7 +356,6 @@ class MyClient(discord.Client):
         logging.info(self.user.id)
         logging.info('------')
 
-        self._load_control_channels(self.config)
         for channel in self.control_channels:
             await send(channel, 'Duck online')
 
