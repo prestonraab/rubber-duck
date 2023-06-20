@@ -151,8 +151,8 @@ class DuckResponseFlow:
         Examples of last messages that indicate a conversation is over: {'"'}{'", "'.join(done_examples)}{'"'}.
         If answering a question below requires assignment-specific context, retrieve that assignment.
         Examples of assignment names: {'"'}{'", "'.join(example_assignments)}{'"'}.
-        If answering a question below requires problem-specific context, retrieve the assignment that the problem belongs to.
-        Examples of questions that require problem-specific context: {'"'}{'", "'.join(example_problems)}{'"'}.
+        If answering a question below requires problem-specific context, retrieve that problem. A problem is a question that is part of an assignment.
+        Examples of questions that need more context: {'"'}{'", "'.join(example_problems)}{'"'}.
         If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
         Examples of topics: {'"'}{'", "'.join(example_topics)}{'"'}.'''
 
@@ -173,7 +173,7 @@ class DuckResponseFlow:
             ),
             GPTFunction(
                 name='get_problem',
-                description='Retrieve the assignment that a problem belongs to',
+                description='Retrieve a problem',
                 parameters=gpt_parameters(
                     properties={
                         "problem_name": {"type": "string"}
