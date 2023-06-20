@@ -39,12 +39,14 @@ class GPTMessage(TypedDict, total=False):
     content: str
     name: str
 
+
 def gpt_parameters(properties: dict[str, Any] = None, required: list[str] = None):
     d = {"type": "object"}
     if required:
         d["required"] = required
     d["properties"] = properties or {}
     return d
+
 
 class GPTFunction(TypedDict):
     # See this website for how to specify parameter types:
@@ -127,13 +129,14 @@ class DuckResponseFlow:
             "project 3"
         ]
         example_problems = [
-            "scurry",
-            "personal library",
-            "practice problems",
-            "postal routing",
-            "auto correct",
-            "scheduling",
-            "simplify"
+            "I need help with scurry",
+            "I'm working on personal library",
+            "I'm stuck on practice problems",
+            "postal routing is hard",
+            "Can you help me with auto correct",
+            "I'm doing scheduling",
+            "Help with simplify",
+            "Help on moose",
         ]
         example_topics = [
             "functions",
@@ -148,7 +151,7 @@ class DuckResponseFlow:
         If answering a question below requires assignment-specific context, retrieve that assignment.
         Examples of assignment names: {'"'}{'", "'.join(example_assignments)}{'"'}.
         If answering a question below requires problem-specific context, identify the assignment the problem belongs to, and retrieve that assignment.
-        Examples of problem names: {'"'}{'", "'.join(example_problems)}{'"'}.
+        Examples of questions that require problem-specific context: {'"'}{'", "'.join(example_problems)}{'"'}.
         If a question below relates to a specific Python topic, retrieve context from the appropriate guide entry.
         Examples of topics: {'"'}{'", "'.join(example_topics)}{'"'}.'''
 
@@ -196,9 +199,9 @@ class DuckResponseFlow:
 
         response_message = completion.choices[0]['message']
 
-        # Step 2: check if GPT wanted to call a function
+        # Check if GPT wanted to call a function
         if response_message.get("function_call"):
-            # Step 3: call the function
+            # Call the function
             # Note: the JSON response may not always be valid; be sure to handle errors
             available_functions = {
                 "end_conversation": self.end_conversation,
@@ -214,14 +217,14 @@ class DuckResponseFlow:
                 logging.error(f"Error calling function: {e}")
                 function_response = f"Error calling {function_name}. \n{e}"
 
-            # Step 4: send the info on the function call and function response to GPT
+            # Let GPT know that the function has been called
             self.chat_messages.append(
                 GPTMessage(
                     role="system",
                     name=function_name,
                     content=function_response
                 )
-            )  # extend conversation with function response
+            )
 
     @event
     async def display_control(self, text: str):
@@ -239,7 +242,9 @@ class DuckResponseFlow:
 
     async def get_problem(self, problem_name: str):
         await self.display_control(f"Retrieving problem {problem_name}.")
-        return f"Problem {problem_name} retrieved."
+        assignment_name = "homework 2a"
+        await self.get_assignment(assignment_name)
+        return f"Problem {problem_name} retrieved from assignment {assignment_name}."
 
     async def get_context(self, topic: str):
         await self.display_control(f"Retrieving context for {topic}.")
@@ -299,8 +304,6 @@ async def execute_command(text, channel):
     if output:
         await send(channel, f'```{output}```')
     return
-
-
 
 
 class MyClient(discord.Client):
@@ -539,6 +542,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
     def get_thread(self, tid) -> discord.Thread:
         thread = self.discord_client.get_channel(int(tid))
         return thread
+
 
 def main(prompts: Path, log_file: Path, config: Path, saved_state: Path):
     # create client
