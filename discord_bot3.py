@@ -431,6 +431,7 @@ class MyClient(discord.Client):
         """
         Restart the bot
         """
+        await channel.send(f'Saving workflows.')
         try:
             self.workflow_manager.save_workflows()
         except Exception as e:
