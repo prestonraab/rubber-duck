@@ -179,7 +179,7 @@ class DuckResponseFlow:
                 })]
 
         completion = await openai.ChatCompletion.acreate(
-            messages=self.chat_messages[-1:] + [GPTMessage(role='system', content=p)],
+            messages=self.chat_messages[-2:] + [GPTMessage(role='system', content=p)],
             model=FAST_AI_ENGINE,
             functions=functions,
             function_call='auto'
