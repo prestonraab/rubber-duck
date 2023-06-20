@@ -197,7 +197,6 @@ class DuckResponseFlow:
             functions=functions,
             function_call='auto'
         )
-        logging.debug(f"Completion: {completion}")
 
         response_message = completion.choices[0]['message']
 
@@ -516,6 +515,9 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
     def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
         # Loads workflow from "workflow" + workflow_id + ".json"
         # Uses the create_workflow function to create a new workflow object
+        for channel in self.discord_client.control_channels:
+            await channel.send(f'Loading workflow {workflow_id}.')
+
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
             workflow_metadata = json.load(file)
