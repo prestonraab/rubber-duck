@@ -105,9 +105,42 @@ class DuckResponseFlow:
         return response
 
     async def act_on_category(self):
+        done_examples = [
+            "Thanks!",
+            "I think I understand now.",
+            "I'm good for now.",
+            "That's it."
+        ]
+        example_assignments = [
+            "homework 1a",
+            "lab 2e",
+            "project 3"
+        ]
+        example_problems = [
+            "scurry",
+            "personal library",
+            "practice problems",
+            "postal routing",
+            "auto correct",
+            "scheduling",
+            "simplify"
+        ]
+        example_topics = [
+            "functions",
+            "while loops",
+            "list patterns",
+            "split and join",
+            "grouping",
+            "program arguments"
+        ]
         p = f'''If one of the above participants is ready to end the conversation, delete the conversation history.
+        Examples of last messages that indicate a conversation is over: {'"'}{'", "'.join(done_examples)}{'"'}.
         If answering the above question requires assignment-specific context, retrieve that assignment.
-        If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.'''
+        Examples of assignment names: {'"'}{'", "'.join(example_assignments)}{'"'}.
+        If answering the above question requires problem-specific context, identify the assignment the problem belongs to, and retrieve that assignment.
+        Examples of problem names: {'"'}{'", "'.join(example_problems)}{'"'}.
+        If the above question relates to a specific Python topic, retrieve context from the appropriate guide entry.
+        Examples of topics: {'"'}{'", "'.join(example_topics)}{'"'}.'''
 
         functions = [GPTFunction(
             name='end_conversation',
