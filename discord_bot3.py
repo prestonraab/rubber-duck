@@ -43,8 +43,7 @@ def gpt_parameters(properties: dict[str, Any] = None, required: list[str] = None
     d = {"type": "object"}
     if required:
         d["required"] = required
-    if properties:
-        d["properties"] = properties
+    d["properties"] = properties or {}
     return d
 
 class GPTFunction(TypedDict):
