@@ -515,8 +515,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
     def deserialize_workflow(self, workflow_id: str) -> WorkflowFunction:
         # Loads workflow from "workflow" + workflow_id + ".json"
         # Uses the create_workflow function to create a new workflow object
-        for channel in self.discord_client.control_channels:
-            await channel.send(f'Loading workflow {workflow_id}.')
+        logging.debug(f'Loading workflow {workflow_id}.')
 
         file_to_load = "workflow" + workflow_id + ".json"
         with open(self.folder / file_to_load) as file:
@@ -538,10 +537,9 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
             try:
                 return self.create_workflow(**kwargs)
             except TypeError as e:
-                for channel in self.discord_client.control_channels:
-                    send(channel, f"Deleting workflow {workflow_id} because of error")
-                    channel.send(file=discord.File(self.folder / file_to_load))
-                    execute_command(f"rm {self.folder / file_to_load}", channel)
+                logging.debug(f"Deleting workflow {workflow_id} because of error")
+                
+                    await execute_command(f"rm {self.folder / file_to_load}", channel)
 
                 logging.debug(
                     f"Error while loading workflow {workflow_id} from file {file_to_load}. "
