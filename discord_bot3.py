@@ -412,7 +412,7 @@ class MyClient(discord.Client):
         """
         Restart the bot
         """
-        self.__exit__(None, None, None)
+        self.workflow_manager.save_workflows()
         await channel.send(f'Restart requested.')
         await execute_command('git fetch', channel)
         await execute_command('git reset --hard', channel)
