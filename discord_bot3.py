@@ -107,11 +107,13 @@ class DuckResponseFlow:
     async def act_on_category(self):
         done_examples = [
             "Thanks!",
+            "later",
+            "another time"
             "I think I understand now.",
             "I'm good for now.",
             "That's it.",
-            "Bye"
-
+            "Bye",
+            "nevermind"
         ]
         example_assignments = [
             "homework 1a",
