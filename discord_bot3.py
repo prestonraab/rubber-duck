@@ -165,7 +165,16 @@ class DuckResponseFlow:
                     properties={
                         "assignment_name": {"type": "string"}
                     }
-                ),
+                )
+            ),
+            GPTFunction(
+                name='get_problem',
+                description='Retrieve the assignment that a problem belongs to',
+                parameters=gpt_parameters(
+                    properties={
+                        "problem_name": {"type": "string"}
+                    }
+                )
             ),
             GPTFunction(
                 name='get_context',
@@ -174,7 +183,7 @@ class DuckResponseFlow:
                     properties={
                         "topic": {"type": "string"}
                     }
-                ),
+                )
             )]
 
         completion = await openai.ChatCompletion.acreate(
@@ -227,6 +236,10 @@ class DuckResponseFlow:
     async def get_assignment(self, assignment_name: str):
         await self.display_control(f"Retrieving assignment {assignment_name}.")
         return f"Assignment {assignment_name} retrieved."
+
+    async def get_problem(self, problem_name: str):
+        await self.display_control(f"Retrieving problem {problem_name}.")
+        return f"Problem {problem_name} retrieved."
 
     async def get_context(self, topic: str):
         await self.display_control(f"Retrieving context for {topic}.")
