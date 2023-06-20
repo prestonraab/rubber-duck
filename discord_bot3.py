@@ -520,7 +520,7 @@ class DiscordWorkflowSerializer(WorkflowSerializer):
                     f"Please check that the workflow constructor matches the workflow file. "
                     f"Error: {e}"
                 )
-                return WorkflowFunction
+                return WorkflowFunction()
 
     def get_thread(self, tid) -> discord.Thread:
         thread = self.discord_client.get_channel(int(tid))
